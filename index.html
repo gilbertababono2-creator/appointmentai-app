@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Appointment Manager</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div class="container">
+
+    <div class="header">
+      <h1>Appointment Booking</h1>
+      <button id="logoutBtn">Logout</button>
+    </div>
+
+    <p>Logged in as <strong id="welcomeUser"></strong></p>
+
+    <h2>New Appointment</h2>
+    <div class="booking-form">
+      <input type="text"  id="clientName" placeholder="Client Name">
+      <input type="text"  id="phone"      placeholder="Phone Number">
+      <input type="date"  id="date">
+      <input type="time"  id="time">
+      <button id="bookBtn">Book Appointment</button>
+    </div>
+
+    <h2>My Appointments</h2>
+    <div id="appointments"></div>
+
+  </div>
+
+  <!-- type="module" enables ES imports and defers automatically -->
+  <script type="module" src="app.js"></script>
+
+</body>
+</html>

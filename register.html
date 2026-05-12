@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Register — AI Appointment Manager</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="auth-page">
+
+  <div class="auth-card">
+    <h2>Create Account</h2>
+    <p>Register to get started</p>
+
+    <input id="regUser"    type="text"     placeholder="Username">
+    <input id="regPass"    type="password" placeholder="Password (min 6 chars)">
+    <input id="regConfirm" type="password" placeholder="Confirm Password">
+
+    <button id="registerBtn">Create Account</button>
+
+    <p>Already have an account? <a href="login.html">Login</a></p>
+  </div>
+
+  <script type="module">
+    import { registerUser } from "./auth.js";
+
+    const registerBtn = document.getElementById("registerBtn");
+
+    registerBtn.addEventListener("click", async () => {
+      const username = document.getElementById("regUser").value.trim();
+      const password = document.getElementById("regPass").value;
+      const confirm  = document.getElementById("regConfirm").value;
+
+      if (!username || !password || !confirm) {
+        alert("Please fill in all fields.");
+        return;
+      }
+
+      if (password !== confirm) {
+        alert("Passwords do not match.");
+        return;
+      }
+
+      registerBtn.disabled    = true;
+      registerBtn.textContent = "Creating account…";
+
+      try {
+        await registerUser(username, password);
+        alert("Account created! Please log in.");
+        window.location.href = "login.html";
+      } catch (err) {
+        alert(err.message);
+        registerBtn.disabled    = false;
+        registerBtn.textContent = "Create Account";
+      }
+    });
+  </script>
+</body>
+</html>

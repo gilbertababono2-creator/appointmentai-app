@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Business Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div class="container">
+
+    <div class="header">
+      <h1>Business Dashboard</h1>
+      <button id="logoutBtn">Logout</button>
+    </div>
+
+    <div class="stats">
+      <div class="stat-card">
+        <h2 id="totalAppointments">0</h2>
+        <p>Total</p>
+      </div>
+      <div class="stat-card">
+        <h2 id="pendingAppointments">0</h2>
+        <p>Pending</p>
+      </div>
+      <div class="stat-card">
+        <h2 id="confirmedAppointments">0</h2>
+        <p>Confirmed</p>
+      </div>
+      <div class="stat-card">
+        <h2 id="completedAppointments">0</h2>
+        <p>Completed</p>
+      </div>
+      <div class="stat-card">
+        <h2 id="cancelledAppointments">0</h2>
+        <p>Cancelled</p>
+      </div>
+    </div>
+
+    <h2>All Appointments</h2>
+    <div id="dashboardAppointments"></div>
+
+  </div>
+
+  <!-- type="module" enables ES imports and defers automatically -->
+  <script type="module" src="dashboard.js"></script>
+
+</body>
+</html>

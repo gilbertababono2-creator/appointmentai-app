@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Choose a Plan — AI Appointment Manager</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div class="container">
+
+    <div class="header">
+      <h1>Choose Your Plan</h1>
+      <div class="header-right">
+        <a href="index.html" class="back-link">← Back</a>
+        <button id="logoutBtn">Logout</button>
+      </div>
+    </div>
+
+    <p id="currentPlanMsg" class="current-plan-msg">Loading your plan…</p>
+
+    <!-- Plan cards injected by JS -->
+    <div class="pricing-grid" id="pricingGrid"></div>
+
+    <p class="pricing-note">
+      Subscriptions renew monthly · Cancel anytime ·
+      All prices in <strong>Ghana Cedis (GHS ₵)</strong> ·
+      Secured by <strong>Paystack</strong> 🔒
+    </p>
+
+  </div>
+
+  <!-- Paystack inline JS SDK -->
+  <script src="https://js.paystack.co/v1/inline.js"></script>
+
+  <script type="module">
+    import { requireLogin, logout }                from "./auth.js";
+    import { PLANS, getPlan, PAYSTACK_PUBLIC_KEY } from "./plans.js";
+    import {
+      getUserPlan,
+      savePaystackSubscription,
+      cancelSubscription,
+    } from "./subscription.js";
+
+    // ── Auth ─────────────────────────────────────────────────────────────────
+    const currentUser = requireLogin();
+    document.getElementById("logoutBtn").addEventListener("click", logout);
+
+    // ── Load current plan ─────────────────────────────────────────────────────
+    const userPlan = await getUserPlan(currentUser);
+    document.getElementById("currentPlanMsg").textContent =
+      `Your current plan: ${userPlan.name}`;
+
+    // ── Build pricing cards ───────────────────────────────────────────────────
+    const grid = document.getElementById("pricingGrid");
+
+    Object.values(PLANS).forEach(plan => {
+      const isCurrent  = plan.key === userPlan.key;
+      const isFeatured = plan.key === "pro";
+      const isPaid     = plan.price > 0;
+
+      const card = document.createElement("div");
+      card.className = [
+        "pricing-card",
+        isCurrent  ? "pricing-card--active"   : "",
+        isFeatured ? "pricing-card--featured" : "",
+      ].join(" ").trim();
+
+      card.innerHTML = `
+        ${isFeatured && !isCurrent
+          ? `<div class="pricing-badge pricing-badge--popular">Most Popular</div>`
+          : ""}
+        ${isCurrent
+          ? `<div class="pricing-badge">Current Plan</div>`
+          : ""}
+
+        <h3 class="pricing-name">${plan.name}</h3>
+
+        <div class="pricing-price">
+          ${plan.price === 0
+            ? `<span class="price-amount">Free</span>`
+            : `<span class="price-currency">₵</span>
+               <span class="price-amount">${plan.price}</span>
+               <span class="price-period">/mo</span>`
+          }
+        </div>
+
+        <ul class="pricing-features">
+          ${plan.features.map(f => `<li>✓ ${f}</li>`).join("")}
+        </ul>
+
+        ${isCurrent
+          ? `<button class="pricing-btn pricing-btn--current" disabled>Current Plan</button>`
+          : isPaid
+            ? `<button class="pricing-btn pricing-btn--upgrade" data-plan="${plan.key}">
+                 Get ${plan.name}
+               </button>`
+            : `<button class="pricing-btn pricing-btn--downgrade" data-plan="free">
+                 Downgrade to Free
+               </button>`
+        }
+      `;
+
+      grid.appendChild(card);
+    });
+
+    // ── Handle button clicks ──────────────────────────────────────────────────
+    grid.addEventListener("click", async e => {
+      const btn = e.target.closest("[data-plan]");
+      if (!btn) return;
+
+      const planKey = btn.dataset.plan;
+      const plan    = getPlan(planKey);
+
+      // Downgrade to free — no payment needed
+      if (planKey === "free") {
+        if (!confirm("Downgrade to Free? You'll lose access to paid features.")) return;
+        try {
+          await cancelSubscription(currentUser);
+          alert("You've been downgraded to the Free plan.");
+          window.location.reload();
+        } catch (err) {
+          alert("Error: " + err.message);
+        }
+        return;
+      }
+
+      // Paid plan — launch Paystack popup
+      launchPaystack(plan, btn);
+    });
+
+    // ── Paystack popup ────────────────────────────────────────────────────────
+    function launchPaystack(plan, btn) {
+      // Use registered email if stored, otherwise build one from username
+      // For production: save real email at registration and retrieve here
+      const email = `${currentUser}@appointmentapp.com`;
+
+      btn.disabled    = true;
+      btn.textContent = "Opening payment…";
+
+      const handler = PaystackPop.setup({
+        key:      PAYSTACK_PUBLIC_KEY,
+        email:    email,
+        amount:   plan.price * 100,    // ✅ Convert GHS to pesewas (GHS 50 → 5000)
+        currency: plan.currency,        // "GHS"
+        plan:     plan.paystackPlanCode,
+
+        ref: `APT_${currentUser}_${plan.key}_${Date.now()}`,
+
+        metadata: {
+          custom_fields: [
+            { display_name: "Username", variable_name: "username", value: currentUser },
+            { display_name: "Plan",     variable_name: "plan",     value: plan.key    },
+          ]
+        },
+
+        // ✅ Payment successful
+        callback: async function(response) {
+          try {
+            await savePaystackSubscription(currentUser, plan.key, response.reference);
+            alert(
+              `🎉 Payment successful!\n` +
+              `You are now on the ${plan.name} plan.\n` +
+              `Reference: ${response.reference}`
+            );
+            window.location.href = "index.html";
+          } catch (err) {
+            alert(
+              `Payment received (ref: ${response.reference}) but plan activation failed.\n` +
+              `Please contact support with this reference number.`
+            );
+            console.error(err);
+          }
+        },
+
+        // User closed popup without paying
+        onClose: function() {
+          btn.disabled    = false;
+          btn.textContent = `Get ${plan.name}`;
+        },
+      });
+
+      handler.openIframe();
+    }
+
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login — AI Appointment Manager</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="auth-page">
+
+  <div class="auth-card">
+    <h2>Welcome Back</h2>
+    <p>Login to continue</p>
+
+    <input id="loginUser" type="text"     placeholder="Username" autocomplete="username">
+    <input id="loginPass" type="password" placeholder="Password" autocomplete="current-password">
+
+    <button id="loginBtn">Login</button>
+
+    <p>Don't have an account? <a href="register.html">Create Account</a></p>
+  </div>
+
+  <script type="module">
+    import { loginUser } from "./auth.js";
+
+    // Already logged in → skip login
+    if (localStorage.getItem("loggedInUser")) {
+      window.location.href = "index.html";
+    }
+
+    const loginBtn  = document.getElementById("loginBtn");
+    const userInput = document.getElementById("loginUser");
+    const passInput = document.getElementById("loginPass");
+
+    async function handleLogin() {
+      const username = userInput.value.trim();
+      const password = passInput.value;
+
+      if (!username || !password) {
+        alert("Please enter your username and password.");
+        return;
+      }
+
+      loginBtn.disabled    = true;
+      loginBtn.textContent = "Logging in…";
+
+      try {
+        await loginUser(username, password);
+        window.location.href = "index.html";
+      } catch (err) {
+        alert(err.message);
+        loginBtn.disabled    = false;
+        loginBtn.textContent = "Login";
+      }
+    }
+
+    loginBtn.addEventListener("click", handleLogin);
+
+    // Enter key submits
+    [userInput, passInput].forEach(el => {
+      el.addEventListener("keydown", e => { if (e.key === "Enter") handleLogin(); });
+    });
+  </script>
+
+</body>
+</html>

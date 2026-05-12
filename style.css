@@ -1,0 +1,648 @@
+   /* style.css — AI Appointment Manager */
+
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+
+/* ── Reset & Base ─────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:         #0f1117;
+  --surface:    #1a1d27;
+  --surface2:   #22263a;
+  --border:     #2e3247;
+  --accent:     #6c63ff;
+  --accent-dim: #6c63ff22;
+  --text:       #e8eaf6;
+  --text-muted: #8a8fa8;
+  --danger:     #ff4f6a;
+  --success:    #31d48a;
+  --warning:    #ffb84d;
+  --info:       #4da6ff;
+
+  --radius:  12px;
+  --radius-sm: 6px;
+  --shadow:  0 4px 24px rgba(0,0,0,0.4);
+  --font:    'DM Sans', sans-serif;
+  --mono:    'DM Mono', monospace;
+}
+
+html, body {
+  height: 100%;
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Layout ───────────────────────────────────────────────────────────────── */
+.container {
+  width: 100%;
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 40px 24px 80px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+}
+
+/* ── Typography ───────────────────────────────────────────────────────────── */
+h1 {
+  font-size: 1.9rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--text);
+}
+
+h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text);
+  margin: 28px 0 14px;
+}
+
+p { color: var(--text-muted); font-size: 0.95rem; }
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 500;
+}
+a:hover { text-decoration: underline; }
+
+/* ── Auth pages (login / register) ───────────────────────────────────────── */
+.auth-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+}
+
+.auth-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 40px 36px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.auth-card h2 {
+  margin: 0 0 2px;
+  font-size: 1.6rem;
+}
+
+.auth-card p { margin-bottom: 6px; }
+
+/* ── Form elements ────────────────────────────────────────────────────────── */
+input, select {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 0.95rem;
+  padding: 11px 14px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+input::placeholder { color: var(--text-muted); }
+
+input:focus, select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-dim);
+}
+
+select { cursor: pointer; }
+
+select option { background: var(--surface2); }
+
+/* ── Buttons ──────────────────────────────────────────────────────────────── */
+button {
+  font-family: var(--font);
+  font-size: 0.95rem;
+  font-weight: 600;
+  padding: 11px 20px;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+}
+
+button:hover   { opacity: 0.88; }
+button:active  { transform: scale(0.97); }
+button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* Primary button */
+#bookBtn, #loginBtn, #registerBtn {
+  width: 100%;
+  background: var(--accent);
+  color: #fff;
+  margin-top: 4px;
+}
+
+/* Logout button */
+#logoutBtn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  padding: 8px 16px;
+  font-size: 0.88rem;
+}
+
+#logoutBtn:hover { border-color: var(--danger); color: var(--danger); }
+
+/* Delete button */
+.delete-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  padding: 6px 10px;
+  font-size: 0.8rem;
+  border-radius: var(--radius-sm);
+}
+
+.delete-btn:hover { border-color: var(--danger); color: var(--danger); }
+
+/* ── Booking form grid ────────────────────────────────────────────────────── */
+.booking-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  margin-bottom: 8px;
+}
+
+.booking-form input  { grid-column: span 1; }
+.booking-form button { grid-column: span 2; }
+
+/* ── Stat cards ───────────────────────────────────────────────────────────── */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 14px;
+  margin-bottom: 8px;
+}
+
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 16px;
+  text-align: center;
+  transition: border-color 0.2s;
+}
+
+.stat-card:hover { border-color: var(--accent); }
+
+.stat-card h2 {
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0 0 4px;
+  color: var(--accent);
+  font-family: var(--mono);
+}
+
+.stat-card p {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+/* ── Appointment cards ────────────────────────────────────────────────────── */
+#appointments, #dashboardAppointments {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.appointment-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  transition: border-color 0.2s;
+}
+
+.appointment-card:hover { border-color: var(--accent); }
+
+.appt-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+}
+
+.appt-name {
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--text);
+}
+
+.appt-phone,
+.appt-datetime,
+.appt-bookedby {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.appt-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.status-select {
+  width: auto;
+  padding: 6px 10px;
+  font-size: 0.85rem;
+}
+
+/* ── Badges ───────────────────────────────────────────────────────────────── */
+.badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: capitalize;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.badge-pending   { background: #ffb84d22; color: var(--warning); }
+.badge-confirmed { background: #4da6ff22; color: var(--info);    }
+.badge-completed { background: #31d48a22; color: var(--success); }
+.badge-cancelled { background: #ff4f6a22; color: var(--danger);  }
+
+/* ── Empty state ──────────────────────────────────────────────────────────── */
+.empty-msg {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 40px 0;
+  font-size: 0.95rem;
+}
+
+/* ── Responsive ───────────────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .booking-form {
+    grid-template-columns: 1fr;
+  }
+  .booking-form button {
+    grid-column: span 1;
+  }
+  .appointment-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .appt-meta {
+    width: 100%;
+    justify-content: space-between;
+  }
+  h1 { font-size: 1.5rem; }
+}
+/* style.css — AI Appointment Manager */
+
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+
+/* ── Reset & Base ─────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:         #0f1117;
+  --surface:    #1a1d27;
+  --surface2:   #22263a;
+  --border:     #2e3247;
+  --accent:     #6c63ff;
+  --accent-dim: #6c63ff22;
+  --text:       #e8eaf6;
+  --text-muted: #8a8fa8;
+  --danger:     #ff4f6a;
+  --success:    #31d48a;
+  --warning:    #ffb84d;
+  --info:       #4da6ff;
+
+  --radius:  12px;
+  --radius-sm: 6px;
+  --shadow:  0 4px 24px rgba(0,0,0,0.4);
+  --font:    'DM Sans', sans-serif;
+  --mono:    'DM Mono', monospace;
+}
+
+html, body {
+  height: 100%;
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Layout ───────────────────────────────────────────────────────────────── */
+.container {
+  width: 100%;
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 40px 24px 80px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+}
+
+/* ── Typography ───────────────────────────────────────────────────────────── */
+h1 {
+  font-size: 1.9rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--text);
+}
+
+h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text);
+  margin: 28px 0 14px;
+}
+
+p { color: var(--text-muted); font-size: 0.95rem; }
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 500;
+}
+a:hover { text-decoration: underline; }
+
+/* ── Auth pages (login / register) ───────────────────────────────────────── */
+.auth-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+}
+
+.auth-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 40px 36px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.auth-card h2 {
+  margin: 0 0 2px;
+  font-size: 1.6rem;
+}
+
+.auth-card p { margin-bottom: 6px; }
+
+/* ── Form elements ────────────────────────────────────────────────────────── */
+input, select {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 0.95rem;
+  padding: 11px 14px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+input::placeholder { color: var(--text-muted); }
+
+input:focus, select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-dim);
+}
+
+select { cursor: pointer; }
+
+select option { background: var(--surface2); }
+
+/* ── Buttons ──────────────────────────────────────────────────────────────── */
+button {
+  font-family: var(--font);
+  font-size: 0.95rem;
+  font-weight: 600;
+  padding: 11px 20px;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+}
+
+button:hover   { opacity: 0.88; }
+button:active  { transform: scale(0.97); }
+button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* Primary button */
+#bookBtn, #loginBtn, #registerBtn {
+  width: 100%;
+  background: var(--accent);
+  color: #fff;
+  margin-top: 4px;
+}
+
+/* Logout button */
+#logoutBtn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  padding: 8px 16px;
+  font-size: 0.88rem;
+}
+
+#logoutBtn:hover { border-color: var(--danger); color: var(--danger); }
+
+/* Delete button */
+.delete-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  padding: 6px 10px;
+  font-size: 0.8rem;
+  border-radius: var(--radius-sm);
+}
+
+.delete-btn:hover { border-color: var(--danger); color: var(--danger); }
+
+/* ── Booking form grid ────────────────────────────────────────────────────── */
+.booking-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  margin-bottom: 8px;
+}
+
+.booking-form input  { grid-column: span 1; }
+.booking-form button { grid-column: span 2; }
+
+/* ── Stat cards ───────────────────────────────────────────────────────────── */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 14px;
+  margin-bottom: 8px;
+}
+
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 16px;
+  text-align: center;
+  transition: border-color 0.2s;
+}
+
+.stat-card:hover { border-color: var(--accent); }
+
+.stat-card h2 {
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0 0 4px;
+  color: var(--accent);
+  font-family: var(--mono);
+}
+
+.stat-card p {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+/* ── Appointment cards ────────────────────────────────────────────────────── */
+#appointments, #dashboardAppointments {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.appointment-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  transition: border-color 0.2s;
+}
+
+.appointment-card:hover { border-color: var(--accent); }
+
+.appt-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+}
+
+.appt-name {
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--text);
+}
+
+.appt-phone,
+.appt-datetime,
+.appt-bookedby {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.appt-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.status-select {
+  width: auto;
+  padding: 6px 10px;
+  font-size: 0.85rem;
+}
+
+/* ── Badges ───────────────────────────────────────────────────────────────── */
+.badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: capitalize;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.badge-pending   { background: #ffb84d22; color: var(--warning); }
+.badge-confirmed { background: #4da6ff22; color: var(--info);    }
+.badge-completed { background: #31d48a22; color: var(--success); }
+.badge-cancelled { background: #ff4f6a22; color: var(--danger);  }
+
+/* ── Empty state ──────────────────────────────────────────────────────────── */
+.empty-msg {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 40px 0;
+  font-size: 0.95rem;
+}
+
+/* ── Responsive ───────────────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .booking-form {
+    grid-template-columns: 1fr;
+  }
+  .booking-form button {
+    grid-column: span 1;
+  }
+  .appointment-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .appt-meta {
+    width: 100%;
+    justify-content: space-between;
+  }
+  h1 { font-size: 1.5rem; }
+}

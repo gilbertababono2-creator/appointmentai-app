@@ -3,36 +3,101 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Zyvora AI Appointment Manager</title>
+  <title>Zyvora — Book Appointments</title>
+  <meta name="description" content="Smart appointment booking for Ghanaian businesses">
+  <meta name="theme-color" content="#6c63ff">
+  <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
   <div class="container">
 
+    <!-- Header -->
     <div class="header">
-      <h1>Zyvora Appointment Booking</h1>
-      <button id="logoutBtn">Logout</button>
+      <h1>Zyvora</h1>
+      <div class="header-right">
+        <!-- Dashboard link — only shown to admin via JS -->
+        <a href="dashboard.html" class="upgrade-link" id="dashboardLink" style="display:none;">
+          📊 Dashboard
+        </a>
+        <a href="pricing.html" class="upgrade-link">⚡ Upgrade</a>
+        <button id="logoutBtn">Logout</button>
+      </div>
     </div>
 
-    <p>Logged in as <strong id="welcomeUser"></strong></p>
+    <!-- User + Plan info -->
+    <div class="user-bar">
+      <span>👤 <strong id="welcomeUser"></strong></span>
+      <span class="plan-badge" id="planBadge">Free</span>
+    </div>
 
+    <!-- Usage bar -->
+    <div class="usage-block">
+      <div class="usage-track">
+        <div class="usage-fill" id="usageBar"></div>
+      </div>
+      <span class="usage-label" id="usageLabel">Loading usage…</span>
+    </div>
+
+    <!-- Limit banner -->
+    <div class="limit-banner" id="limitBanner" style="display:none;">
+      <div class="limit-banner-text">
+        <strong>Monthly limit reached.</strong>
+        Upgrade your plan to keep booking appointments.
+      </div>
+      <button id="goToPricing" class="limit-banner-btn">Upgrade Now</button>
+    </div>
+
+    <!-- Booking form -->
     <h2>New Appointment</h2>
     <div class="booking-form">
-      <input type="text"  id="clientName" placeholder="Client Name">
-      <input type="text"  id="phone"      placeholder="Phone Number">
-      <input type="date"  id="date">
-      <input type="time"  id="time">
+      <input type="text" id="clientName" placeholder="Client Name">
+      <input type="text" id="phone"      placeholder="Phone Number">
+      <input type="date" id="date">
+      <input type="time" id="time">
       <button id="bookBtn">Book Appointment</button>
     </div>
 
+    <!-- Appointments list -->
     <h2>My Appointments</h2>
     <div id="appointments"></div>
 
   </div>
 
-  <!-- type="module" enables ES imports and defers automatically -->
+  <!-- Upgrade modal -->
+  <div class="modal-overlay" id="upgradeModal" style="display:none;">
+    <div class="modal">
+      <h2>Limit Reached 🚫</h2>
+      <p id="upgradeMsg"></p>
+      <p>Upgrade to keep booking — plans start at just <strong>₵50/mo</strong>.</p>
+      <div class="modal-actions">
+        <button id="goToPricing" class="btn-primary">See Plans</button>
+        <button id="upgradeModalClose" class="btn-ghost">Maybe Later</button>
+      </div>
+    </div>
+  </div>
+
   <script type="module" src="app.js"></script>
+
+  <!-- Show dashboard link to admins only -->
+  <script type="module">
+    import { isAdmin } from "./auth.js";
+    if (isAdmin()) {
+      document.getElementById("dashboardLink").style.display = "inline-flex";
+    }
+  </script>
+
+  <!-- Register Service Worker -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then(reg => console.log('SW registered:', reg.scope))
+          .catch(err => console.log('SW failed:', err));
+      });
+    }
+  </script>
 
 </body>
 </html>

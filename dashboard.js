@@ -1,20 +1,24 @@
-// dashboard.js — Business dashboard logic
+// dashboard.js — Business dashboard (admin only)
 import { db } from "./firebase.js";
-import { requireLogin, logout } from "./auth.js";
+import { requireAdmin, logout } from "./auth.js";
+import { getUserPlan }          from "./subscription.js";
 import {
   collection,
   onSnapshot,
   doc,
   updateDoc,
-  deleteDoc
+  deleteDoc,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-// ── Auth guard ────────────────────────────────────────────────────────────────
-requireLogin();
+// ── Admin guard — redirects non-admins to index.html ─────────────────────────
+const currentUser = requireAdmin();
 
 // ── DOM refs ──────────────────────────────────────────────────────────────────
-const logoutBtn  = document.getElementById("logoutBtn");
-const listEl     = document.getElementById("dashboardAppointments");
+document.getElementById("logoutBtn").addEventListener("click", logout);
+
+const welcomeEl = document.getElementById("welcomeUser");
+const planBadge = document.getElementById("planBadge");
+const listEl    = document.getElementById("dashboardAppointments");
 
 const stats = {
   total:     document.getElementById("totalAppointments"),
@@ -24,28 +28,34 @@ const stats = {
   cancelled: document.getElementById("cancelledAppointments"),
 };
 
-logoutBtn.addEventListener("click", logout);
+// ── Show admin name + plan ────────────────────────────────────────────────────
+if (welcomeEl) welcomeEl.textContent = currentUser;
 
-// ── Real-time dashboard feed ──────────────────────────────────────────────────
+getUserPlan(currentUser).then(plan => {
+  if (planBadge) {
+    planBadge.textContent = plan.name;
+    planBadge.className   = `plan-badge plan-badge--${plan.key}`;
+  }
+});
+
+// ── Real-time all appointments feed ───────────────────────────────────────────
 onSnapshot(collection(db, "appointments"), (snapshot) => {
   const all = [];
   snapshot.forEach(d => all.push({ id: d.id, ...d.data() }));
 
-  // Sort by date + time descending
   all.sort((a, b) => {
     const aKey = (a.date || "") + (a.time || "");
     const bKey = (b.date || "") + (b.time || "");
     return bKey.localeCompare(aKey);
   });
 
-  // Update stat counters
+  // Update counters
   stats.total.textContent     = all.length;
   stats.pending.textContent   = all.filter(a => a.status === "pending").length;
   stats.confirmed.textContent = all.filter(a => a.status === "confirmed").length;
   stats.completed.textContent = all.filter(a => a.status === "completed").length;
   stats.cancelled.textContent = all.filter(a => a.status === "cancelled").length;
 
-  // Render list
   listEl.innerHTML = "";
 
   if (all.length === 0) {
@@ -77,12 +87,12 @@ onSnapshot(collection(db, "appointments"), (snapshot) => {
     listEl.appendChild(card);
   });
 
-  // Status change handler
+  // Status change
   listEl.querySelectorAll(".status-select").forEach(select => {
     select.addEventListener("change", async () => {
       try {
         await updateDoc(doc(db, "appointments", select.dataset.id), {
-          status: select.value
+          status: select.value,
         });
       } catch (err) {
         alert("Update failed: " + err.message);
@@ -90,7 +100,7 @@ onSnapshot(collection(db, "appointments"), (snapshot) => {
     });
   });
 
-  // Delete handler
+  // Delete
   listEl.querySelectorAll(".delete-btn").forEach(btn => {
     btn.addEventListener("click", async () => {
       if (confirm("Delete this appointment permanently?")) {
@@ -104,21 +114,16 @@ onSnapshot(collection(db, "appointments"), (snapshot) => {
   });
 });
 
-// ── Reminder system — alerts for appointments within the next 60 minutes ──────
+// ── Reminder check ────────────────────────────────────────────────────────────
 function startReminderSystem() {
   function check() {
-    const now      = new Date();
-    const soon     = new Date(now.getTime() + 60 * 60 * 1000);
-    const nowStr   = now.toISOString().slice(0, 16).replace("T", " ");
-    const soonStr  = soon.toISOString().slice(0, 16).replace("T", " ");
+    const now     = new Date();
+    const soon    = new Date(now.getTime() + 60 * 60 * 1000);
+    const nowStr  = now.toISOString().slice(0, 16).replace("T", " ");
+    const soonStr = soon.toISOString().slice(0, 16).replace("T", " ");
 
-    // Get current snapshot from DOM cards (no extra Firestore call needed)
-    const cards = listEl.querySelectorAll(".appointment-card");
-    cards.forEach(card => {
-      const datetimeEl = card.querySelector(".appt-datetime");
-      if (!datetimeEl) return;
-
-      const text = datetimeEl.textContent;
+    listEl.querySelectorAll(".appointment-card").forEach(card => {
+      const text      = card.querySelector(".appt-datetime")?.textContent || "";
       const dateMatch = text.match(/(\d{4}-\d{2}-\d{2})/);
       const timeMatch = text.match(/(\d{2}:\d{2})/);
       if (!dateMatch || !timeMatch) return;
@@ -130,9 +135,8 @@ function startReminderSystem() {
       }
     });
   }
-
-  check(); // Run once immediately
-  setInterval(check, 60_000); // Then every minute
+  check();
+  setInterval(check, 60_000);
 }
 
 startReminderSystem();

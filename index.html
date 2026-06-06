@@ -270,7 +270,7 @@ async function sendChat() {
       ? `User has ${appts.length} appointments: ${appts.map(a => `${a.clientName} on ${a.date} at ${a.time} (${a.status || 'pending'})`).join('; ')}`
       : 'User has no appointments yet.';
 
-    const res = await fetch('https://zyvora-backend.onrender.com/api/ai', {
+    const res = await fetch('https://zyvora-appointment-booking.onrender.com/api/ai', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -303,7 +303,7 @@ document.getElementById('aiSuggestBtn').addEventListener('click', async () => {
 
   const appts = window.currentAppointments || [];
   try {
-    const res = await fetch('https://zyvora-backend.onrender.com/api/ai', {
+    const res = await fetch('https://zyvora-appointment-booking.onrender.com/api/ai', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -330,7 +330,7 @@ window.generateReminder = async function(appt) {
   document.getElementById('reminderContent').textContent = 'Generating personalized reminder…';
 
   try {
-    const res = await fetch('https://zyvora-backend.onrender.com/api/ai', {
+    const res = await fetch('https://zyvora-appointment-booking.onrender.com/api/ai', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

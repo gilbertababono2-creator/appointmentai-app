@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Upgrade — Zyvora</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="app-wrapper">
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <span class="logo-icon">⚡</span>
+      <span class="logo-text">Zyvora</span>
+    </div>
+    <nav class="sidebar-nav">
+      <a href="index.html" class="nav-item">
+        <span class="nav-icon">📅</span> Appointments
+      </a>
+      <a href="dashboard.html" class="nav-item">
+        <span class="nav-icon">📊</span> Dashboard
+      </a>
+      <a href="ai-chat.html" class="nav-item">
+        <span class="nav-icon">🤖</span> AI Assistant
+      </a>
+      <a href="pricing.html" class="nav-item active">
+        <span class="nav-icon">⚡</span> Upgrade
+      </a>
+    </nav>
+    <div class="sidebar-user">
+      <div class="user-avatar" id="userAvatar">?</div>
+      <div class="user-info">
+        <span id="welcomeUser">Loading…</span>
+        <span class="plan-badge" id="planBadge">Free</span>
+      </div>
+      <button id="logoutBtn" class="logout-btn">↗</button>
+    </div>
+  </aside>
+
+  <header class="mobile-header">
+    <button class="menu-toggle" id="menuToggle">☰</button>
+    <span class="logo-text">Upgrade</span>
+  </header>
+
+  <main class="main-content">
+
+    <section class="section-card">
+      <div class="section-header">
+        <h2>Choose Your Plan</h2>
+      </div>
+      <p style="color:var(--text2);font-size:0.85rem;margin-bottom:4px;">
+        All prices in Ghana Cedis (GHS ₵) · Subscriptions renew monthly · Cancel anytime
+      </p>
+      <p style="color:var(--text3);font-size:0.78rem;margin-bottom:20px;">
+        🔒 Secured by Paystack · Current plan: <strong id="currentPlanLabel" style="color:var(--accent);">Loading…</strong>
+      </p>
+
+      <div class="pricing-grid" id="pricingGrid">
+
+        <!-- Starter -->
+        <div class="plan-card" id="planStarter">
+          <div class="plan-name">Starter</div>
+          <div class="plan-price">₵50 <span>/ month</span></div>
+          <ul class="plan-features">
+            <li>50 appointments/month</li>
+            <li>AI Smart Suggestions</li>
+            <li>AI Reminder Messages</li>
+            <li>No-Show Risk Alerts</li>
+            <li>Email support</li>
+          </ul>
+          <button class="btn-primary" id="btnStarter" onclick="subscribe('starter', 5000)">
+            Get Starter
+          </button>
+        </div>
+
+        <!-- Pro (popular) -->
+        <div class="plan-card popular" id="planPro">
+          <div class="popular-badge">Most Popular</div>
+          <div class="plan-name">Pro</div>
+          <div class="plan-price">₵120 <span>/ month</span></div>
+          <ul class="plan-features">
+            <li>Unlimited appointments</li>
+            <li>Everything in Starter</li>
+            <li>AI Business Insights</li>
+            <li>Priority support</li>
+            <li>Export to CSV</li>
+          </ul>
+          <button class="btn-primary" id="btnPro" onclick="subscribe('pro', 12000)">
+            Get Pro
+          </button>
+        </div>
+
+        <!-- Business -->
+        <div class="plan-card" id="planBusiness">
+          <div class="plan-name">Business</div>
+          <div class="plan-price">₵250 <span>/ month</span></div>
+          <ul class="plan-features">
+            <li>Everything in Pro</li>
+            <li>Multiple staff accounts</li>
+            <li>Custom branding</li>
+            <li>API access</li>
+            <li>Dedicated support</li>
+          </ul>
+          <button class="btn-primary" id="btnBusiness" onclick="subscribe('business', 25000)">
+            Get Business
+          </button>
+        </div>
+
+      </div>
+
+      <!-- Free tier note -->
+      <div style="margin-top:20px;padding:14px;background:var(--surface2);border-radius:var(--radius-sm);font-size:0.8rem;color:var(--text3);text-align:center;">
+        🆓 Free plan includes 10 appointments/month — no card needed
+      </div>
+
+    </section>
+
+  </main>
+</div>
+
+<script type="module">
+import { db } from "./firebase.js";
+import { getUserPlan, PLAN_LIMITS } from "./plans.js";
+import { doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+// localStorage auth guard
+const currentUser = localStorage.getItem("loggedInUser");
+if (!currentUser) { window.location.href = "login.html"; }
+
+document.getElementById("welcomeUser").textContent = currentUser;
+document.getElementById("userAvatar").textContent = (currentUser || "?")[0].toUpperCase();
+
+// Load plan
+try {
+  const planData = await getUserPlan(currentUser);
+  const plan = planData?.plan || "free";
+
+  const badge = document.getElementById("planBadge");
+  badge.textContent = plan.charAt(0).toUpperCase() + plan.slice(1);
+  badge.className = `plan-badge ${plan}`;
+
+  const label = document.getElementById("currentPlanLabel");
+  if (label) label.textContent = plan.charAt(0).toUpperCase() + plan.slice(1);
+
+  if (plan === "starter") {
+    document.getElementById("planStarter").style.borderColor = "var(--success)";
+    document.getElementById("btnStarter").textContent = "Current Plan ✓";
+    document.getElementById("btnStarter").disabled = true;
+  } else if (plan === "pro") {
+    document.getElementById("planPro").style.borderColor = "var(--success)";
+    document.getElementById("btnPro").textContent = "Current Plan ✓";
+    document.getElementById("btnPro").disabled = true;
+  } else if (plan === "business") {
+    document.getElementById("planBusiness").style.borderColor = "var(--success)";
+    document.getElementById("btnBusiness").textContent = "Current Plan ✓";
+    document.getElementById("btnBusiness").disabled = true;
+  }
+} catch (e) {
+  console.error("Plan load error:", e);
+  document.getElementById("currentPlanLabel").textContent = "Free";
+}
+
+document.getElementById("logoutBtn")?.addEventListener("click", () => {
+  localStorage.removeItem("loggedInUser");
+  window.location.href = "login.html";
+});
+
+document.getElementById("menuToggle")?.addEventListener("click", () => {
+  document.getElementById("sidebar").classList.toggle("open");
+});
+
+// Paystack payment
+window.subscribe = function(planName, amountGhs) {
+  if (!currentUser) return alert("Please log in first.");
+
+  const handler = PaystackPop.setup({
+    key: window.PAYSTACK_PUBLIC_KEY || "pk_test_YOUR_KEY_HERE",
+    email: currentUser.email,
+    amount: amountGhs * 100, // kobo
+    currency: "GHS",
+    metadata: {
+      uid: currentUser.uid,
+      plan: planName
+    },
+    callback: async function(response) {
+      try {
+        const { db } = await import("./firebase.js");
+        const { doc, setDoc, serverTimestamp } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+        await setDoc(doc(db, "plans", currentUser), {
+          plan: planName,
+          paystackRef: response.reference,
+          updatedAt: serverTimestamp()
+        });
+        alert(`🎉 Success! You're now on the ${planName.charAt(0).toUpperCase() + planName.slice(1)} plan.`);
+        window.location.href = "index.html";
+      } catch (e) {
+        console.error("Plan update failed:", e);
+        alert("Payment received but plan update failed. Please contact support with ref: " + response.reference);
+      }
+    },
+    onClose: function() {
+      console.log("Payment dialog closed.");
+    }
+  });
+  handler.openIframe();
+};
+</script>
+
+<!-- Paystack -->
+<script src="https://js.paystack.co/v1/inline.js"></script>
+</body>
+</html>

@@ -179,7 +179,7 @@ window.subscribe = function(planName, amountGhs) {
   if (!currentUser) return alert("Please log in first.");
 
   const handler = PaystackPop.setup({
-    key: window.PAYSTACK_PUBLIC_KEY || "pk_test_YOUR_KEY_HERE",
+    key: window.PAYSTACK_PUBLIC_KEY || "pk_test_eb55bd75ef73209ab75da6c380e9a87c5a3a6d18",
     email: currentUser.email,
     amount: amountGhs * 100, // kobo
     currency: "GHS",

@@ -178,29 +178,32 @@ document.getElementById("menuToggle")?.addEventListener("click", () => {
 window.subscribe = function(planName, amountGhs) {
   if (!currentUser) return alert("Please log in first.");
 
+  // currentUser is a username string from localStorage
+  // Paystack needs an email — use a placeholder if no email stored
+  const userEmail = localStorage.getItem("userEmail") || currentUser + "@zyvora.app";
+
   const handler = PaystackPop.setup({
-    key: window.PAYSTACK_PUBLIC_KEY || "pk_test_eb55bd75ef73209ab75da6c380e9a87c5a3a6d18",
-    email: currentUser.email,
-    amount: amountGhs * 100, // kobo
+    key: "pk_test_YOUR_KEY_HERE", // Replace with your Paystack public key
+    email: userEmail,
+    amount: amountGhs * 100, // pesewas
     currency: "GHS",
     metadata: {
-      uid: currentUser.uid,
+      username: currentUser,
       plan: planName
     },
     callback: async function(response) {
       try {
-        const { db } = await import("./firebase.js");
-        const { doc, setDoc, serverTimestamp } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+        // Use already-imported db, doc, setDoc, serverTimestamp
         await setDoc(doc(db, "plans", currentUser), {
           plan: planName,
           paystackRef: response.reference,
           updatedAt: serverTimestamp()
         });
-        alert(`🎉 Success! You're now on the ${planName.charAt(0).toUpperCase() + planName.slice(1)} plan.`);
+        alert("🎉 Success! You're now on the " + planName.charAt(0).toUpperCase() + planName.slice(1) + " plan.");
         window.location.href = "index.html";
       } catch (e) {
         console.error("Plan update failed:", e);
-        alert("Payment received but plan update failed. Please contact support with ref: " + response.reference);
+        alert("Payment received but plan update failed. Contact support with ref: " + response.reference);
       }
     },
     onClose: function() {

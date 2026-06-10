@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Assistant — Zyvora</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script src="config.js"></script>
+<style>
+.ai-layout{display:grid;grid-template-columns:280px 1fr;height:calc(100vh - 0px);overflow:hidden}
+.ai-sidebar{background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.ai-sidebar-header{padding:16px;border-bottom:1px solid var(--border)}
+.ai-sidebar-title{font-size:.82rem;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px}
+.ai-mode-list{display:flex;flex-direction:column;gap:4px}
+.ai-mode-btn{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius-sm);cursor:pointer;border:none;background:none;text-align:left;transition:all .2s;width:100%;font-family:var(--font)}
+.ai-mode-btn:hover{background:var(--surface2)}
+.ai-mode-btn.active{background:var(--accent-glow);border:1px solid rgba(108,99,255,.3)}
+.ai-mode-icon{width:32px;height:32px;border-radius:8px;display:grid;place-items:center;font-size:.9rem;flex-shrink:0}
+.ai-mode-info{flex:1;min-width:0}
+.ai-mode-name{font-size:.82rem;font-weight:600;color:var(--text)}
+.ai-mode-desc{font-size:.68rem;color:var(--text3);margin-top:1px}
+.ai-chat-area{display:flex;flex-direction:column;height:100%}
+.ai-chat-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;background:var(--surface)}
+.ai-chat-header-icon{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;font-size:1.1rem}
+.ai-chat-header-info h3{font-size:.9rem;font-weight:700;color:var(--text)}
+.ai-chat-header-info p{font-size:.72rem;color:var(--text3);margin-top:1px}
+.ai-messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px}
+.ai-msg{max-width:82%;padding:12px 14px;border-radius:12px;font-size:.84rem;line-height:1.6;white-space:pre-wrap}
+.ai-msg.assistant{align-self:flex-start;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:4px 12px 12px 12px}
+.ai-msg.user{align-self:flex-end;background:var(--accent);color:#fff;border-radius:12px 4px 12px 12px}
+.ai-msg.typing{opacity:.6}
+.ai-quick-prompts{padding:8px 16px;display:flex;gap:6px;flex-wrap:wrap;border-top:1px solid var(--border);background:var(--surface)}
+.quick-btn{background:var(--surface2);border:1px solid var(--border);color:var(--text2);font-size:.72rem;padding:5px 11px;border-radius:20px;cursor:pointer;font-family:var(--font);transition:all .2s;white-space:nowrap}
+.quick-btn:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+.ai-input-bar{padding:12px 16px;border-top:1px solid var(--border);background:var(--surface);display:flex;gap:8px;align-items:flex-end}
+.ai-input-bar textarea{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;color:var(--text);font-family:var(--font);font-size:.85rem;outline:none;resize:none;max-height:120px;line-height:1.5}
+.ai-input-bar textarea:focus{border-color:var(--accent)}
+.ai-send-btn{background:var(--accent);color:#fff;border:none;width:40px;height:40px;border-radius:10px;cursor:pointer;font-size:1rem;display:grid;place-items:center;flex-shrink:0;transition:opacity .2s}
+.ai-send-btn:hover{opacity:.85}
+.ai-send-btn:disabled{opacity:.4;cursor:not-allowed}
+@media(max-width:720px){
+  .ai-layout{grid-template-columns:1fr}
+  .ai-sidebar{display:none}
+  .ai-sidebar.mobile-open{display:flex;position:fixed;inset:0;z-index:300}
+  .main-content{padding:0!important}
+}
+</style>
+</head>
+<body>
+<div class="app-wrapper">
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <span class="logo-icon">⚡</span><span class="logo-text">Zyvora</span>
+    </div>
+    <nav class="sidebar-nav">
+      <a href="index.html" class="nav-item"><span class="nav-icon">📅</span> Appointments</a>
+      <a href="dashboard.html" class="nav-item"><span class="nav-icon">📊</span> Dashboard</a>
+      <a href="calendar.html" class="nav-item"><span class="nav-icon">🗓</span> Calendar</a>
+      <a href="crm.html" class="nav-item"><span class="nav-icon">👥</span> Customers</a>
+      <a href="ai-chat.html" class="nav-item active"><span class="nav-icon">🤖</span> AI Assistant</a>
+      <a href="pricing.html" class="nav-item"><span class="nav-icon">⚡</span> Upgrade</a>
+    </nav>
+    <div class="sidebar-user">
+      <div class="user-avatar" id="userAvatar">?</div>
+      <div class="user-info">
+        <span id="welcomeUser">Loading…</span>
+        <span class="plan-badge" id="planBadge">Free</span>
+      </div>
+      <button id="logoutBtn" class="logout-btn">↗</button>
+    </div>
+  </aside>
+
+  <header class="mobile-header">
+    <button class="menu-toggle" id="menuToggle">☰</button>
+    <span class="logo-text">AI Assistant</span>
+  </header>
+
+  <div class="main-content" style="padding:0;overflow:hidden">
+    <div class="ai-layout">
+
+      <!-- AI mode sidebar -->
+      <div class="ai-sidebar">
+        <div class="ai-sidebar-header">
+          <div class="ai-sidebar-title">AI Modes</div>
+          <div class="ai-mode-list">
+            <button class="ai-mode-btn active" data-mode="receptionist" onclick="setMode('receptionist',this)">
+              <div class="ai-mode-icon" style="background:rgba(108,99,255,.15);color:var(--accent)">🎙</div>
+              <div class="ai-mode-info">
+                <div class="ai-mode-name">AI Receptionist</div>
+                <div class="ai-mode-desc">General assistant & scheduling</div>
+              </div>
+            </button>
+            <button class="ai-mode-btn" data-mode="analyst" onclick="setMode('analyst',this)">
+              <div class="ai-mode-icon" style="background:rgba(0,212,170,.15);color:var(--accent2)">📊</div>
+              <div class="ai-mode-info">
+                <div class="ai-mode-name">Business Analyst</div>
+                <div class="ai-mode-desc">Revenue & growth insights</div>
+              </div>
+            </button>
+            <button class="ai-mode-btn" data-mode="retention" onclick="setMode('retention',this)">
+              <div class="ai-mode-icon" style="background:rgba(255,179,71,.15);color:var(--warning)">💌</div>
+              <div class="ai-mode-info">
+                <div class="ai-mode-name">Retention Coach</div>
+                <div class="ai-mode-desc">Customer retention strategies</div>
+              </div>
+            </button>
+            <button class="ai-mode-btn" data-mode="reminder" onclick="setMode('reminder',this)">
+              <div class="ai-mode-icon" style="background:rgba(255,107,107,.15);color:var(--danger)">📱</div>
+              <div class="ai-mode-info">
+                <div class="ai-mode-name">Reminder Writer</div>
+                <div class="ai-mode-desc">Draft WhatsApp/SMS messages</div>
+              </div>
+            </button>
+            <button class="ai-mode-btn" data-mode="optimizer" onclick="setMode('optimizer',this)">
+              <div class="ai-mode-icon" style="background:rgba(108,99,255,.15);color:var(--accent)">⚡</div>
+              <div class="ai-mode-info">
+                <div class="ai-mode-name">Schedule Optimizer</div>
+                <div class="ai-mode-desc">Fill gaps & reduce no-shows</div>
+              </div>
+            </button>
+          </div>
+        </div>
+        <div style="padding:14px;border-top:1px solid var(--border);margin-top:auto">
+          <button class="btn-ghost" style="width:100%;font-size:.78rem" onclick="clearChat()">🗑 Clear Chat</button>
+        </div>
+      </div>
+
+      <!-- Chat area -->
+      <div class="ai-chat-area">
+        <div class="ai-chat-header">
+          <div class="ai-chat-header-icon" id="modeIcon" style="background:rgba(108,99,255,.15);color:var(--accent)">🎙</div>
+          <div class="ai-chat-header-info">
+            <h3 id="modeTitle">AI Receptionist</h3>
+            <p id="modeSubtitle">Your smart scheduling assistant</p>
+          </div>
+        </div>
+
+        <div class="ai-messages" id="aiMessages">
+          <div class="ai-msg assistant">
+            👋 Hi! I'm your Zyvora AI Receptionist.<br><br>
+            I have access to your appointment data and can help you with:<br>
+            • Reviewing and managing appointments<br>
+            • Reducing no-shows with smart tips<br>
+            • Growing your bookings<br>
+            • Drafting reminder messages<br>
+            • Business growth advice<br><br>
+            What would you like help with today?
+          </div>
+        </div>
+
+        <div class="ai-quick-prompts" id="quickPrompts">
+          <button class="quick-btn" onclick="setPrompt('How can I reduce no-shows?')">Reduce no-shows</button>
+          <button class="quick-btn" onclick="setPrompt('Show my appointment summary')">Appointment summary</button>
+          <button class="quick-btn" onclick="setPrompt('Tips to grow my bookings')">Grow bookings</button>
+          <button class="quick-btn" onclick="setPrompt('Draft a reminder for tomorrow')">Draft reminder</button>
+          <button class="quick-btn" onclick="setPrompt('What are my busiest days?')">Busiest days</button>
+          <button class="quick-btn" onclick="setPrompt('Which customers should I follow up with?')">Follow-ups</button>
+        </div>
+
+        <div class="ai-input-bar">
+          <textarea id="aiInput" rows="1" placeholder="Ask anything about your business…"
+            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg()}"
+            oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
+          <button class="ai-send-btn" id="sendBtn" onclick="sendMsg()">↑</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { db } from "./firebase.js";
+import { collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getUserPlan } from "./plans.js";
+import { callAI, getLocalToday } from "./ai-utils.js";
+
+const currentUser = localStorage.getItem("loggedInUser");
+if (!currentUser) { window.location.href = "login.html"; }
+
+document.getElementById("welcomeUser").textContent = currentUser;
+document.getElementById("userAvatar").textContent = (currentUser||"?")[0].toUpperCase();
+getUserPlan(currentUser).then(p=>{
+  const plan=p?.plan||"free";
+  const b=document.getElementById("planBadge");
+  b.textContent=plan[0].toUpperCase()+plan.slice(1);
+  b.className="plan-badge "+plan;
+}).catch(()=>{});
+document.getElementById("logoutBtn")?.addEventListener("click",()=>{
+  localStorage.removeItem("loggedInUser"); window.location.href="login.html";
+});
+document.getElementById("menuToggle")?.addEventListener("click",()=>{
+  document.getElementById("sidebar").classList.toggle("open");
+});
+
+let appointments = [];
+let chatHistory = [];
+let currentMode = "receptionist";
+let isLoading = false;
+
+// Mode config
+const MODES = {
+  receptionist: {
+    icon:"🎙", title:"AI Receptionist", subtitle:"Your smart scheduling assistant",
+    color:"rgba(108,99,255,.15)", textColor:"var(--accent)",
+    system:`You are Zyvora AI Receptionist, an expert assistant for a Ghanaian appointment booking business. You have access to the user's appointment data. Be warm, practical, and concise. Use plain text. Use GHS (₵) for currency.`,
+    prompts:["Reduce no-shows","Appointment summary","Grow bookings","Draft reminder","Busiest days","Follow-ups"]
+  },
+  analyst: {
+    icon:"📊", title:"Business Analyst", subtitle:"Revenue & growth insights",
+    color:"rgba(0,212,170,.15)", textColor:"var(--accent2)",
+    system:`You are a business analyst AI for a Ghanaian service business. Analyze appointment data, identify trends, give specific revenue and growth recommendations. Be data-driven and practical.`,
+    prompts:["Revenue analysis","Growth opportunities","Slow periods","Best performing service","Customer trends","Forecast next month"]
+  },
+  retention: {
+    icon:"💌", title:"Retention Coach", subtitle:"Customer retention strategies",
+    color:"rgba(255,179,71,.15)", textColor:"var(--warning)",
+    system:`You are a customer retention specialist for Ghanaian service businesses. Give warm, culturally-aware retention strategies. Help re-engage lapsed customers and build loyalty.`,
+    prompts:["Who to follow up","Loyalty program ideas","Win-back message","VIP customer perks","Referral strategy","Inactive customers"]
+  },
+  reminder: {
+    icon:"📱", title:"Reminder Writer", subtitle:"Draft WhatsApp/SMS messages",
+    color:"rgba(255,107,107,.15)", textColor:"var(--danger)",
+    system:`You write short, warm appointment reminder messages for a Ghanaian service business. Messages should be under 100 words, friendly, and professional. Use WhatsApp-style formatting.`,
+    prompts:["Write appointment reminder","Cancellation message","Follow-up message","Rescheduling message","Thank you message","Promotional message"]
+  },
+  optimizer: {
+    icon:"⚡", title:"Schedule Optimizer", subtitle:"Fill gaps & reduce no-shows",
+    color:"rgba(108,99,255,.15)", textColor:"var(--accent)",
+    system:`You are a scheduling optimization AI for a Ghanaian service business. Analyze booking patterns and suggest how to optimize the schedule, fill slow periods, and prevent no-shows.`,
+    prompts:["Best booking times","Fill slow periods","Overbooking strategy","Buffer time advice","Peak hours","Seasonal patterns"]
+  }
+};
+
+// Load appointments
+getDocs(query(collection(db,"appointments"), where("uid","==",currentUser)))
+  .then(snap=>{ appointments = snap.docs.map(d=>d.data()); })
+  .catch(()=>{});
+
+window.setMode = function(mode, btn) {
+  currentMode = mode;
+  chatHistory = [];
+  const m = MODES[mode];
+  document.querySelectorAll(".ai-mode-btn").forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");
+  document.getElementById("modeIcon").textContent = m.icon;
+  document.getElementById("modeIcon").style.background = m.color;
+  document.getElementById("modeIcon").style.color = m.textColor;
+  document.getElementById("modeTitle").textContent = m.title;
+  document.getElementById("modeSubtitle").textContent = m.subtitle;
+
+  // Update quick prompts
+  document.getElementById("quickPrompts").innerHTML = m.prompts
+    .map(p=>`<button class="quick-btn" onclick="setPrompt('${p}')">${p}</button>`)
+    .join("");
+
+  // Clear messages and show mode intro
+  document.getElementById("aiMessages").innerHTML = `
+    <div class="ai-msg assistant">
+      ${m.icon} Switched to <strong>${m.title}</strong> mode.<br><br>
+      ${getModeIntro(mode)}
+    </div>`;
+};
+
+function getModeIntro(mode) {
+  const intros = {
+    receptionist: "I can help you manage appointments, reduce no-shows, and grow your bookings. What do you need?",
+    analyst: "I'll analyze your appointment data to find revenue opportunities and growth trends. What would you like to know?",
+    retention: "I'll help you retain customers and re-engage those who haven't visited in a while. Who should we focus on?",
+    reminder: "I'll draft professional reminder messages for your clients. Just tell me who and what type of message.",
+    optimizer: "I'll optimize your schedule to maximize bookings and minimize gaps. Let's look at your patterns."
+  };
+  return intros[mode] || "How can I help?";
+}
+
+window.setPrompt = function(text) {
+  const input = document.getElementById("aiInput");
+  input.value = text;
+  input.focus();
+  input.style.height = "auto";
+  input.style.height = input.scrollHeight+"px";
+};
+
+window.sendMsg = async function() {
+  if (isLoading) return;
+  const input = document.getElementById("aiInput");
+  const msg = input.value.trim();
+  if (!msg) return;
+
+  input.value = "";
+  input.style.height = "auto";
+  isLoading = true;
+  document.getElementById("sendBtn").disabled = true;
+
+  const msgs = document.getElementById("aiMessages");
+  msgs.innerHTML += `<div class="ai-msg user">${esc(msg)}</div>`;
+
+  const typingId = "t"+Date.now();
+  msgs.innerHTML += `<div class="ai-msg assistant typing" id="${typingId}">
+    <span style="animation:blink 1s infinite">●</span>
+    <span style="animation:blink 1s .2s infinite">●</span>
+    <span style="animation:blink 1s .4s infinite">●</span>
+  </div>`;
+  msgs.scrollTop = msgs.scrollHeight;
+
+  chatHistory.push({role:"user", content:msg});
+
+  // Build context
+  const total = appointments.length;
+  const today = getLocalToday();
+  const upcoming = appointments.filter(a=>a.date>=today&&a.status!=="cancelled").length;
+  const completed = appointments.filter(a=>a.status==="completed").length;
+  const cancelled = appointments.filter(a=>a.status==="cancelled").length;
+  const risk = appointments.filter(a=>a.noShowRisk==="high").length;
+  const services = {};
+  appointments.forEach(a=>{ if(a.service) services[a.service]=(services[a.service]||0)+1; });
+  const recentAppts = appointments.slice(0,8).map(a=>({
+    name:a.clientName, date:a.date, time:a.time,
+    service:a.service, status:a.status, risk:a.noShowRisk
+  }));
+
+  const contextStr = `Business data: total=${total}, upcoming=${upcoming}, completed=${completed}, cancelled=${cancelled}, at-risk=${risk}, services=${JSON.stringify(services)}, recent=${JSON.stringify(recentAppts)}`;
+  const systemPrompt = MODES[currentMode].system + " " + contextStr;
+
+  try {
+    const reply = await callAI(
+      [{role:"system",content:systemPrompt}, ...chatHistory.slice(-8)],
+      1000,
+      () => {
+        const el = document.getElementById(typingId);
+        if (el) el.textContent = "⏳ Waking up AI…";
+      }
+    );
+    chatHistory.push({role:"assistant",content:reply});
+    const el = document.getElementById(typingId);
+    if (el) { el.textContent = reply; el.classList.remove("typing"); }
+  } catch(e) {
+    const el = document.getElementById(typingId);
+    const msg2 = !navigator.onLine
+      ? "📵 No internet connection."
+      : "❌ " + e.message;
+    if (el) { el.textContent = msg2; el.classList.remove("typing"); }
+  }
+
+  isLoading = false;
+  document.getElementById("sendBtn").disabled = false;
+  msgs.scrollTop = msgs.scrollHeight;
+};
+
+window.clearChat = function() {
+  chatHistory = [];
+  document.getElementById("aiMessages").innerHTML = `
+    <div class="ai-msg assistant">Chat cleared. How can I help you?</div>`;
+};
+
+function esc(s){ return String(s||"").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+</script>
+<style>
+@keyframes blink{0%,100%{opacity:.2}50%{opacity:1}}
+</style>
+</body>
+</html>

@@ -183,7 +183,7 @@ window.subscribe = function(planName, amountGhs) {
   const userEmail = localStorage.getItem("userEmail") || currentUser + "@zyvora.app";
 
   const handler = PaystackPop.setup({
-    key: "pk_test_YOUR_KEY_HERE", // Replace with your Paystack public key
+    key: "pk_test_f89fa0de67dd22c5b8ef52e509991f02271174cf", // Replace with your Paystack public key
     email: userEmail,
     amount: amountGhs * 100, // pesewas
     currency: "GHS",

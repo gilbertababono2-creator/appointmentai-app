@@ -90,6 +90,6 @@ export async function loginUser(username, password) {
   if (ADMIN_USERNAMES.includes(username)) {
     window.location.href = "dashboard.html";
   } else {
-    window.location.href = "index.html";
+    window.location.href = "app.html";
   }
 }

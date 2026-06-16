@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+  <link rel="dns-prefetch" href="https://www.gstatic.com">
+  <link rel="dns-prefetch" href="https://firestore.googleapis.com">
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Communication Center — Zyvora</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script src="config.js"></script>
+<style>
+/* ── Tabs ── */
+.comms-tabs{display:flex;gap:4px;background:var(--surface2);padding:3px;border-radius:8px;margin-bottom:20px;flex-wrap:wrap}
+.comms-tab{background:none;border:none;color:var(--text3);font-family:var(--font);font-size:.78rem;font-weight:600;padding:6px 14px;border-radius:6px;cursor:pointer;transition:all .2s;white-space:nowrap}
+.comms-tab.active{background:var(--accent);color:#fff}
+.comms-view{display:none}.comms-view.active{display:block}
+
+/* ── Stats bar ── */
+.comms-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:20px}
+.comms-stat{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;text-align:center}
+.comms-stat-val{font-size:1.6rem;font-weight:700;font-family:var(--mono);color:var(--text)}
+.comms-stat-lbl{font-size:.68rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text3);margin-top:4px}
+
+/* ── Reminder queue ── */
+.reminder-queue{display:flex;flex-direction:column;gap:10px}
+.reminder-item{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.reminder-item.urgent{border-color:rgba(255,107,107,.4);background:rgba(255,107,107,.05)}
+.reminder-item.sent{border-color:rgba(0,212,170,.3);opacity:.7}
+.reminder-avatar{width:38px;height:38px;border-radius:50%;background:var(--accent-glow);color:var(--accent);display:grid;place-items:center;font-weight:700;font-size:.85rem;flex-shrink:0}
+.reminder-info{flex:1;min-width:120px}
+.reminder-name{font-size:.88rem;font-weight:700;color:var(--text)}
+.reminder-meta{font-size:.74rem;color:var(--text3);margin-top:2px}
+.reminder-actions{display:flex;gap:6px;flex-wrap:wrap}
+.reminder-btn{background:var(--surface3);border:none;color:var(--text2);font-size:.72rem;padding:5px 11px;border-radius:6px;cursor:pointer;font-family:var(--font);font-weight:500;transition:all .2s;white-space:nowrap}
+.reminder-btn:hover{background:var(--accent);color:#fff}
+.reminder-btn.whatsapp:hover{background:#25D366;color:#fff}
+.reminder-btn.sent-btn{background:rgba(0,212,170,.15);color:var(--success);cursor:default}
+
+/* ── Templates ── */
+.templates-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+.template-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px;display:flex;flex-direction:column;gap:10px;transition:border-color .2s}
+.template-card:hover{border-color:var(--accent)}
+.template-type{display:flex;align-items:center;gap:8px}
+.template-icon{width:32px;height:32px;border-radius:8px;display:grid;place-items:center;font-size:.9rem;flex-shrink:0}
+.template-name{font-size:.85rem;font-weight:700;color:var(--text)}
+.template-body{font-size:.78rem;color:var(--text2);line-height:1.6;background:var(--surface);border-radius:6px;padding:10px 12px;border:1px solid var(--border);white-space:pre-wrap}
+.template-actions{display:flex;gap:6px}
+
+/* ── Bulk send ── */
+.bulk-section{display:flex;flex-direction:column;gap:14px}
+.bulk-select-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.bulk-filter{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 12px;color:var(--text);font-family:var(--font);font-size:.85rem;outline:none}
+.bulk-filter:focus{border-color:var(--accent)}
+.bulk-preview{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px}
+.bulk-preview-title{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text3);margin-bottom:10px}
+.bulk-list{display:flex;flex-direction:column;gap:6px;max-height:300px;overflow-y:auto}
+.bulk-item{display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--surface);border-radius:6px;font-size:.8rem}
+.bulk-item input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;flex-shrink:0}
+.bulk-item-info{flex:1}
+.bulk-item-name{font-weight:600;color:var(--text)}
+.bulk-item-meta{color:var(--text3);font-size:.72rem}
+.bulk-message-box{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;color:var(--text);font-family:var(--font);font-size:.85rem;resize:vertical;min-height:100px;outline:none}
+.bulk-message-box:focus{border-color:var(--accent)}
+
+/* ── AI Composer ── */
+.composer-wrap{display:flex;flex-direction:column;gap:14px}
+.composer-type-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
+.composer-type-btn{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;text-align:center;cursor:pointer;transition:all .2s;font-family:var(--font)}
+.composer-type-btn:hover,.composer-type-btn.active{border-color:var(--accent);background:var(--accent-glow)}
+.composer-type-btn .icon{font-size:1.2rem;margin-bottom:4px}
+.composer-type-btn .label{font-size:.75rem;font-weight:600;color:var(--text2)}
+.composer-fields{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.composer-result{background:var(--surface2);border:1px solid rgba(108,99,255,.3);border-radius:var(--radius-sm);padding:14px;font-size:.84rem;color:var(--text);line-height:1.7;white-space:pre-wrap;min-height:80px;display:none}
+.composer-result.show{display:block}
+.composer-result-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+
+/* ── History ── */
+.history-list{display:flex;flex-direction:column;gap:8px}
+.history-item{background:var(--surface2);border-radius:var(--radius-sm);padding:12px 14px;display:flex;align-items:flex-start;gap:12px}
+.history-icon{width:32px;height:32px;border-radius:8px;display:grid;place-items:center;font-size:.9rem;flex-shrink:0;background:rgba(0,212,170,.15);color:var(--success)}
+.history-text{flex:1;font-size:.8rem;color:var(--text2);line-height:1.5}
+.history-time{font-size:.7rem;color:var(--text3);margin-top:2px}
+.history-msg{font-size:.78rem;color:var(--text);margin-top:4px;background:var(--surface);padding:6px 8px;border-radius:4px;white-space:pre-wrap}
+
+/* ── Bulk progress ── */
+.bulk-progress{display:none;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px}
+.progress-bar-wrap{height:6px;background:var(--surface3);border-radius:10px;overflow:hidden;margin:8px 0}
+.progress-bar-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:10px;width:0%;transition:width .4s}
+
+@media(max-width:600px){
+  .composer-fields{grid-template-columns:1fr}
+  .bulk-select-row{flex-direction:column;align-items:stretch}
+}
+</style>
+</head>
+<body>
+<div class="app-wrapper">
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <img src="logo-icon.png" alt="Zyvora" style="width:32px;height:32px;object-fit:contain;border-radius:6px"><span class="logo-text" style="background:linear-gradient(90deg,#00cfff,#6c63ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:800">Zyvora</span>
+    </div>
+    <nav class="sidebar-nav">
+      <a href="app.html" class="nav-item"><span class="nav-icon">📅</span> Appointments</a>
+      <a href="dashboard.html" class="nav-item"><span class="nav-icon">📊</span> Dashboard</a>
+      <a href="calendar.html" class="nav-item"><span class="nav-icon">🗓</span> Calendar</a>
+      <a href="crm.html" class="nav-item"><span class="nav-icon">👥</span> Customers</a>
+      <a href="comms.html" class="nav-item active"><span class="nav-icon">📲</span> Comms</a>
+      <a href="ai-chat.html" class="nav-item"><span class="nav-icon">🤖</span> AI Assistant</a>
+      <a href="pricing.html" class="nav-item"><span class="nav-icon">⚡</span> Upgrade</a>
+    </nav>
+    <div class="sidebar-user">
+      <div class="user-avatar" id="userAvatar">?</div>
+      <div class="user-info">
+        <span id="welcomeUser">Loading…</span>
+        <span class="plan-badge" id="planBadge">Free</span>
+      </div>
+      <button id="logoutBtn" class="logout-btn">↗</button>
+    </div>
+  </aside>
+
+  <header class="mobile-header">
+    <button class="menu-toggle" id="menuToggle">☰</button>
+    <span class="logo-text">Comms Center</span>
+  </header>
+
+  <main class="main-content">
+
+    <!-- Stats bar -->
+    <div class="comms-stats">
+      <div class="comms-stat">
+        <div class="comms-stat-val" id="statPending">0</div>
+        <div class="comms-stat-lbl">Need Reminder</div>
+      </div>
+      <div class="comms-stat">
+        <div class="comms-stat-val" id="statToday">0</div>
+        <div class="comms-stat-lbl">Today's Appts</div>
+      </div>
+      <div class="comms-stat">
+        <div class="comms-stat-val" id="statTomorrow">0</div>
+        <div class="comms-stat-lbl">Tomorrow</div>
+      </div>
+      <div class="comms-stat">
+        <div class="comms-stat-val" id="statSent">0</div>
+        <div class="comms-stat-lbl">Messages Sent</div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="comms-tabs">
+      <button class="comms-tab active" data-view="queue">📋 Reminder Queue</button>
+      <button class="comms-tab" data-view="bulk">📢 Bulk Send</button>
+      <button class="comms-tab" data-view="composer">🤖 AI Composer</button>
+      <button class="comms-tab" data-view="templates">📝 Templates</button>
+      <button class="comms-tab" data-view="history">🕐 History</button>
+    </div>
+
+    <!-- ── REMINDER QUEUE ── -->
+    <div class="comms-view active" id="view-queue">
+      <section class="section-card">
+        <div class="section-header">
+          <h2>📋 Reminder Queue</h2>
+          <div style="display:flex;gap:8px">
+            <select id="queueFilter" class="bulk-filter" onchange="renderQueue()">
+              <option value="upcoming">Upcoming</option>
+              <option value="today">Today</option>
+              <option value="tomorrow">Tomorrow</option>
+              <option value="all">All Pending</option>
+            </select>
+            <button class="ai-suggest-btn" onclick="generateAllReminders()">🤖 Generate All</button>
+          </div>
+        </div>
+        <div id="reminderQueue" class="reminder-queue">
+          <div class="empty-state"><span class="empty-icon">📋</span><p>Loading appointments…</p></div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ── BULK SEND ── -->
+    <div class="comms-view" id="view-bulk">
+      <section class="section-card">
+        <div class="section-header">
+          <h2>📢 Bulk Message</h2>
+          <span style="font-size:.75rem;color:var(--text3)">Select recipients & send</span>
+        </div>
+        <div class="bulk-section">
+
+          <div class="bulk-select-row">
+            <select id="bulkFilter" class="bulk-filter" onchange="loadBulkList()">
+              <option value="pending">All Pending</option>
+              <option value="confirmed">All Confirmed</option>
+              <option value="upcoming">Upcoming (next 7 days)</option>
+              <option value="today">Today only</option>
+              <option value="tomorrow">Tomorrow only</option>
+              <option value="risk">High No-Show Risk</option>
+            </select>
+            <button class="ai-suggest-btn" onclick="selectAll()">☑ Select All</button>
+            <button class="btn-ghost" style="font-size:.78rem;padding:7px 12px" onclick="deselectAll()">☐ Deselect</button>
+          </div>
+
+          <div class="bulk-preview">
+            <div class="bulk-preview-title">Recipients <span id="selectedCount">(0 selected)</span></div>
+            <div id="bulkList" class="bulk-list"></div>
+          </div>
+
+          <div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+              <label style="font-size:.75rem;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.04em">Message</label>
+              <button class="reminder-btn" onclick="aiGenerateBulkMsg()">🤖 AI Write</button>
+            </div>
+            <textarea class="bulk-message-box" id="bulkMessage"
+              placeholder="Type your message here… or click AI Write to generate one."></textarea>
+            <div style="font-size:.72rem;color:var(--text3);margin-top:4px">
+              Use <strong>{name}</strong>, <strong>{date}</strong>, <strong>{time}</strong>, <strong>{service}</strong> as placeholders.
+            </div>
+          </div>
+
+          <!-- Progress bar -->
+          <div class="bulk-progress" id="bulkProgress">
+            <div style="font-size:.82rem;font-weight:600;color:var(--text)" id="bulkProgressLabel">Preparing…</div>
+            <div class="progress-bar-wrap"><div class="progress-bar-fill" id="bulkProgressFill"></div></div>
+            <div style="font-size:.75rem;color:var(--text3)" id="bulkProgressSub"></div>
+          </div>
+
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <button class="btn-primary" style="flex:1;min-width:160px" onclick="sendBulkWhatsApp()">
+              📱 Open WhatsApp for Each
+            </button>
+            <button class="btn-ghost" style="flex:1;min-width:160px" onclick="copyBulkMessages()">
+              📋 Copy All Messages
+            </button>
+          </div>
+
+        </div>
+      </section>
+    </div>
+
+    <!-- ── AI COMPOSER ── -->
+    <div class="comms-view" id="view-composer">
+      <section class="section-card">
+        <div class="section-header">
+          <h2>🤖 AI Message Composer</h2>
+          <span style="font-size:.75rem;color:var(--text3)">Powered by Groq AI</span>
+        </div>
+        <div class="composer-wrap">
+
+          <div>
+            <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text3);margin-bottom:8px">Message Type</div>
+            <div class="composer-type-grid">
+              <div class="composer-type-btn active" data-type="reminder" onclick="setComposerType(this)">
+                <div class="icon">⏰</div><div class="label">Reminder</div>
+              </div>
+              <div class="composer-type-btn" data-type="confirmation" onclick="setComposerType(this)">
+                <div class="icon">✅</div><div class="label">Confirmation</div>
+              </div>
+              <div class="composer-type-btn" data-type="followup" onclick="setComposerType(this)">
+                <div class="icon">💌</div><div class="label">Follow-Up</div>
+              </div>
+              <div class="composer-type-btn" data-type="noshow" onclick="setComposerType(this)">
+                <div class="icon">⚠️</div><div class="label">No-Show Warning</div>
+              </div>
+              <div class="composer-type-btn" data-type="promo" onclick="setComposerType(this)">
+                <div class="icon">🎉</div><div class="label">Promotional</div>
+              </div>
+              <div class="composer-type-btn" data-type="reschedule" onclick="setComposerType(this)">
+                <div class="icon">🔄</div><div class="label">Reschedule</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="composer-fields">
+            <div class="form-group">
+              <label>Client Name</label>
+              <input type="text" id="composerName" placeholder="e.g. Kofi Mensah" class="crm-search" style="width:100%">
+            </div>
+            <div class="form-group">
+              <label>Phone</label>
+              <input type="text" id="composerPhone" placeholder="e.g. 0244123456" class="crm-search" style="width:100%">
+            </div>
+            <div class="form-group">
+              <label>Service</label>
+              <input type="text" id="composerService" placeholder="e.g. Haircut" class="crm-search" style="width:100%">
+            </div>
+            <div class="form-group">
+              <label>Date & Time</label>
+              <input type="text" id="composerDateTime" placeholder="e.g. June 15 at 10:00 AM" class="crm-search" style="width:100%">
+            </div>
+            <div class="form-group">
+              <label>Business Name</label>
+              <input type="text" id="composerBusiness" placeholder="e.g. Gloria's Salon" class="crm-search" style="width:100%">
+            </div>
+            <div class="form-group">
+              <label>Extra Notes (optional)</label>
+              <input type="text" id="composerNotes" placeholder="e.g. bring deposit" class="crm-search" style="width:100%">
+            </div>
+          </div>
+
+          <button class="btn-primary" onclick="composeMessage()">🤖 Generate Message</button>
+
+          <div class="composer-result" id="composerResult"></div>
+          <div class="composer-result-actions" id="composerActions" style="display:none">
+            <button class="btn-primary" style="width:auto;padding:8px 16px" onclick="copyComposed()">📋 Copy</button>
+            <button class="ai-suggest-btn" onclick="openWhatsApp()">📱 WhatsApp</button>
+            <button class="btn-ghost" style="padding:8px 14px;font-size:.8rem" onclick="saveToTemplates()">💾 Save as Template</button>
+            <button class="btn-ghost" style="padding:8px 14px;font-size:.8rem" onclick="composeMessage()">🔄 Regenerate</button>
+          </div>
+
+        </div>
+      </section>
+    </div>
+
+    <!-- ── TEMPLATES ── -->
+    <div class="comms-view" id="view-templates">
+      <section class="section-card">
+        <div class="section-header">
+          <h2>📝 Message Templates</h2>
+          <button class="ai-suggest-btn" onclick="generateTemplates()">🤖 Refresh AI Templates</button>
+        </div>
+        <div id="templatesGrid" class="templates-grid"></div>
+      </section>
+    </div>
+
+    <!-- ── HISTORY ── -->
+    <div class="comms-view" id="view-history">
+      <section class="section-card">
+        <div class="section-header">
+          <h2>🕐 Message History</h2>
+          <button class="btn-ghost" style="font-size:.78rem;padding:6px 12px" onclick="clearHistory()">🗑 Clear</button>
+        </div>
+        <div id="historyList" class="history-list">
+          <div class="empty-state"><span class="empty-icon">🕐</span><p>No messages sent yet.</p></div>
+        </div>
+      </section>
+    </div>
+
+  </main>
+</div>
+
+<script type="module">
+// ── Self-contained: no external utility imports that can fail ──
+import { db } from "./firebase.js";
+import {
+  collection, query, where, onSnapshot
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getUserPlan } from "./plans.js";
+
+// ── Inline utilities (no import needed) ──────────────────────
+const AI_URL = "https://zyvora-appointment-booking.onrender.com/api/ai";
+
+function getLocalToday() {
+  const d = new Date();
+  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+}
+
+function esc(s) {
+  return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+async function callAI(messages, maxTokens=800) {
+  const ctrl = new AbortController();
+  const t = setTimeout(()=>ctrl.abort(), 20000);
+  try {
+    const res = await fetch(AI_URL, {
+      method:"POST", signal:ctrl.signal,
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({messages, max_tokens:maxTokens})
+    });
+    clearTimeout(t);
+    if (!res.ok) throw new Error("Server "+res.status);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message||data.error);
+    return data.choices?.[0]?.message?.content || "No response.";
+  } catch(e) {
+    clearTimeout(t);
+    throw e.name==="AbortError" ? new Error("AI timeout — try again") : e;
+  }
+}
+
+// ── Auth ──────────────────────────────────────────────────────
+const currentUser = localStorage.getItem("loggedInUser");
+if (!currentUser) { window.location.href = "login.html"; }
+
+// Set profile immediately — synchronous, no await
+const welcomeEl = document.getElementById("welcomeUser");
+const avatarEl  = document.getElementById("userAvatar");
+if (welcomeEl) welcomeEl.textContent = currentUser || "User";
+if (avatarEl)  avatarEl.textContent  = (currentUser||"U")[0].toUpperCase();
+
+// Load plan separately — failure here must NOT block anything
+getUserPlan(currentUser).then(p => {
+  const plan = p?.plan || "free";
+  const b = document.getElementById("planBadge");
+  if (b) { b.textContent = plan[0].toUpperCase()+plan.slice(1); b.className = "plan-badge "+plan; }
+}).catch(e => {
+  console.warn("Plan load failed:", e.message);
+  const b = document.getElementById("planBadge");
+  if (b) { b.textContent = "Free"; b.className = "plan-badge free"; }
+});
+
+document.getElementById("logoutBtn")?.addEventListener("click", () => {
+  localStorage.removeItem("loggedInUser");
+  window.location.href = "login.html";
+});
+
+// ── Tab switching ─────────────────────────────────────────────
+document.querySelectorAll(".comms-tab").forEach(tab => {
+  tab.addEventListener("click", () => {
+    document.querySelectorAll(".comms-tab").forEach(t=>t.classList.remove("active"));
+    document.querySelectorAll(".comms-view").forEach(v=>v.classList.remove("active"));
+    tab.classList.add("active");
+    document.getElementById("view-"+tab.dataset.view).classList.add("active");
+    if (tab.dataset.view==="bulk")      loadBulkList();
+    if (tab.dataset.view==="templates") loadTemplates();
+    if (tab.dataset.view==="history")   renderHistory();
+  });
+});
+
+// ── Appointments data ─────────────────────────────────────────
+let allAppts = [];
+window._allAppts = allAppts;
+const apptMap = new Map();
+const userEmail = localStorage.getItem("userEmail") || "";
+
+function onCommsSnapshot(snap) {
+  snap.docs.forEach(d => apptMap.set(d.id, { id:d.id, ...d.data() }));
+  allAppts = [...apptMap.values()].sort(
+    (a,b) => (a.date||"").localeCompare(b.date||"") || (a.time||"").localeCompare(b.time||"")
+  );
+  window._allAppts = allAppts;
+  updateStats();
+  renderQueue();
+  loadBulkList();
+}
+
+function onSnapError(uid, err) {
+  console.error("Comms snapshot error for uid="+uid+":", err.code, err.message);
+  // Show Firestore rule hint
+  const q = document.getElementById("reminderQueue");
+  if (q && !allAppts.length) {
+    q.innerHTML = `<div class="empty-state"><span class="empty-icon">⚠️</span>
+      <p>Could not load appointments.<br>
+      <span style="font-size:.72rem;color:var(--text3)">${err.code === "permission-denied"
+        ? "Check Firestore security rules — set allow read, write: if true"
+        : err.message}</span></p></div>`;
+  }
+}
+
+// Primary: query by username
+onSnapshot(
+  query(collection(db,"appointments"), where("uid","==",currentUser)),
+  onCommsSnapshot,
+  (err) => onSnapError(currentUser, err)
+);
+
+// Secondary: query by email (Google auth)
+if (userEmail && userEmail !== currentUser) {
+  onSnapshot(
+    query(collection(db,"appointments"), where("uid","==",userEmail)),
+    onCommsSnapshot,
+    (err) => onSnapError(userEmail, err)
+  );
+}
+
+// ── Stats ─────────────────────────────────────────────────────
+function updateStats() {
+  const today    = getLocalToday();
+  const d2 = new Date(); d2.setDate(d2.getDate()+1);
+  const tomorrow = d2.getFullYear()+"-"+String(d2.getMonth()+1).padStart(2,"0")+"-"+String(d2.getDate()).padStart(2,"0");
+
+  const set = (id,v) => { const el=document.getElementById(id); if(el) el.textContent=v; };
+  set("statPending",  allAppts.filter(a=>a.status==="pending"||a.status==="confirmed").length);
+  set("statToday",    allAppts.filter(a=>a.date===today).length);
+  set("statTomorrow", allAppts.filter(a=>a.date===tomorrow).length);
+  set("statSent",     JSON.parse(localStorage.getItem("zyvora_msg_count")||"0"));
+}
+
+// ── Reminder Queue ────────────────────────────────────────────
+window.renderQueue = function() {
+  const filter   = document.getElementById("queueFilter")?.value || "upcoming";
+  const today    = getLocalToday();
+  const d2=new Date(); d2.setDate(d2.getDate()+1);
+  const tomorrow = d2.getFullYear()+"-"+String(d2.getMonth()+1).padStart(2,"0")+"-"+String(d2.getDate()).padStart(2,"0");
+  const d7=new Date(); d7.setDate(d7.getDate()+7);
+  const nextWeek = d7.getFullYear()+"-"+String(d7.getMonth()+1).padStart(2,"0")+"-"+String(d7.getDate()).padStart(2,"0");
+
+  let list = allAppts.filter(a=>a.status!=="cancelled"&&a.status!=="completed");
+  if (filter==="today")    list = list.filter(a=>a.date===today);
+  else if (filter==="tomorrow") list = list.filter(a=>a.date===tomorrow);
+  else if (filter==="upcoming") list = list.filter(a=>a.date>=today&&a.date<=nextWeek);
+
+  const container = document.getElementById("reminderQueue");
+  if (!container) return;
+
+  if (!list.length) {
+    container.innerHTML = `<div class="empty-state"><span class="empty-icon">✅</span>
+      <p>No appointments need reminders right now.</p></div>`;
+    return;
+  }
+
+  const sentKeys = JSON.parse(localStorage.getItem("zyvora_sent_ids")||"[]");
+  container.innerHTML = list.map(a => {
+    const initials=(a.clientName||"?").split(" ").map(n=>n[0]).join("").toUpperCase().slice(0,2);
+    const isToday=a.date===today, isTomorrow=a.date===tomorrow;
+    const isUrgent=isToday||a.noShowRisk==="high";
+    const wasSent=sentKeys.includes(a.id);
+    const urgentLabel=isToday?"🔴 TODAY":isTomorrow?"🟡 TOMORROW":"";
+    return `<div class="reminder-item ${isUrgent?"urgent":""} ${wasSent?"sent":""}">
+      <div class="reminder-avatar">${initials}</div>
+      <div class="reminder-info">
+        <div class="reminder-name">${esc(a.clientName)} ${urgentLabel?`<span style="font-size:.65rem;margin-left:4px">${urgentLabel}</span>`:""}</div>
+        <div class="reminder-meta">📅 ${a.date} · ⏰ ${a.time} · ${a.service||"Appointment"} · 📞 ${a.phone||"No phone"}</div>
+      </div>
+      <div class="reminder-actions">
+        <button class="reminder-btn" onclick="generateSingleReminder('${a.id}')">🤖 Generate</button>
+        ${a.phone
+          ? `<button class="reminder-btn whatsapp" onclick="quickWhatsApp('${a.id}')">📱 WhatsApp</button>`
+          : `<button class="reminder-btn" style="opacity:.4" disabled>No phone</button>`}
+        ${wasSent
+          ? `<button class="reminder-btn sent-btn">✓ Sent</button>`
+          : `<button class="reminder-btn" onclick="markSent('${a.id}')">✓ Mark Sent</button>`}
+      </div>
+    </div>`;
+  }).join("");
+};
+
+// ── Generate single reminder ──────────────────────────────────
+window.generateSingleReminder = async function(id) {
+  const a = allAppts.find(x=>x.id===id);
+  if (!a) return;
+  const btn = event.target;
+  const orig = btn.textContent;
+  btn.textContent="…"; btn.disabled=true;
+  try {
+    const msg = await callAI([
+      {role:"system",content:"Write a short WhatsApp appointment reminder. Under 120 words. Warm Ghanaian tone. Plain text only."},
+      {role:"user",content:`Client: ${a.clientName}, Service: ${a.service||"appointment"}, Date: ${a.date}, Time: ${a.time}.`}
+    ]);
+    const ok = confirm("AI Reminder:
+
+"+msg+"
+
+Click OK to copy");
+    if (ok) { navigator.clipboard.writeText(msg).catch(()=>{}); logMessage(a.clientName,a.phone||"",msg,"AI Reminder"); }
+  } catch(e) { alert("Could not generate: "+e.message); }
+  btn.textContent=orig; btn.disabled=false;
+};
+
+// ── Quick WhatsApp ────────────────────────────────────────────
+window.quickWhatsApp = async function(id) {
+  const a = allAppts.find(x=>x.id===id);
+  if (!a||!a.phone) return;
+  const btn=event.target; btn.textContent="…"; btn.disabled=true;
+  let msg;
+  try {
+    msg = await callAI([
+      {role:"system",content:"Write a WhatsApp appointment reminder under 100 words. Warm Ghanaian tone. Plain text."},
+      {role:"user",content:`Client: ${a.clientName}, ${a.service||"appointment"} on ${a.date} at ${a.time}.`}
+    ]);
+  } catch(e) {
+    msg=`Hello ${a.clientName}! 👋 Reminder for your ${a.service||"appointment"} on ${a.date} at ${a.time}. See you soon! 🙏`;
+  }
+  const phone=(a.phone||"").replace(/\D/g,"");
+  const ghPhone=phone.startsWith("0")?"233"+phone.slice(1):phone.startsWith("233")?phone:"233"+phone;
+  window.open("https://wa.me/"+ghPhone+"?text="+encodeURIComponent(msg),"_blank");
+  logMessage(a.clientName,a.phone,msg,"WhatsApp"); markSent(id);
+  btn.textContent="📱 WhatsApp"; btn.disabled=false;
+};
+
+// ── Mark sent ────────────────────────────────────────────────
+window.markSent = function(id) {
+  const sent=JSON.parse(localStorage.getItem("zyvora_sent_ids")||"[]");
+  if(!sent.includes(id)){
+    sent.push(id); localStorage.setItem("zyvora_sent_ids",JSON.stringify(sent));
+    const count=(parseInt(localStorage.getItem("zyvora_msg_count")||"0"))+1;
+    localStorage.setItem("zyvora_msg_count",String(count));
+  }
+  updateStats(); renderQueue();
+};
+
+// ── Generate all reminders ────────────────────────────────────
+window.generateAllReminders = async function() {
+  const today=getLocalToday();
+  const d7=new Date(); d7.setDate(d7.getDate()+7);
+  const nextWeek=d7.getFullYear()+"-"+String(d7.getMonth()+1).padStart(2,"0")+"-"+String(d7.getDate()).padStart(2,"0");
+  const list=allAppts.filter(a=>a.status!=="cancelled"&&a.status!=="completed"&&a.date>=today&&a.date<=nextWeek&&a.phone);
+  if(!list.length){alert("No upcoming appointments with phone numbers.");return;}
+  if(!confirm(`Generate AI reminders for ${list.length} appointments?
+This will open WhatsApp for each one.`))return;
+  for(let i=0;i<list.length;i++){
+    const a=list[i];
+    let msg;
+    try {
+      msg=await callAI([
+        {role:"system",content:"Write a WhatsApp reminder under 80 words. Warm Ghanaian tone. Plain text."},
+        {role:"user",content:`Client: ${a.clientName}, ${a.service||"appointment"} on ${a.date} at ${a.time}.`}
+      ],150);
+    } catch(e) {
+      msg=`Hello ${a.clientName}! Reminder for your ${a.service||"appointment"} on ${a.date} at ${a.time}. See you soon! 🙏`;
+    }
+    const phone=(a.phone||"").replace(/\D/g,"");
+    const ghPhone=phone.startsWith("0")?"233"+phone.slice(1):phone;
+    window.open("https://wa.me/"+ghPhone+"?text="+encodeURIComponent(msg),"_blank");
+    logMessage(a.clientName,a.phone,msg,"Bulk AI Reminder"); markSent(a.id);
+    await new Promise(r=>setTimeout(r,1500));
+  }
+  alert("✅ Done! WhatsApp opened for "+list.length+" clients.");
+};
+
+// ── Bulk list ────────────────────────────────────────────────
+window.loadBulkList = function() {
+  const filter=document.getElementById("bulkFilter")?.value||"pending";
+  const today=getLocalToday();
+  const d2=new Date();d2.setDate(d2.getDate()+1);
+  const tomorrow=d2.getFullYear()+"-"+String(d2.getMonth()+1).padStart(2,"0")+"-"+String(d2.getDate()).padStart(2,"0");
+  const d7=new Date();d7.setDate(d7.getDate()+7);
+  const nextWeek=d7.getFullYear()+"-"+String(d7.getMonth()+1).padStart(2,"0")+"-"+String(d7.getDate()).padStart(2,"0");
+  let list=[...allAppts];
+  if(filter==="pending") list=list.filter(a=>a.status==="pending");
+  else if(filter==="confirmed") list=list.filter(a=>a.status==="confirmed");
+  else if(filter==="upcoming") list=list.filter(a=>a.date>=today&&a.date<=nextWeek&&a.status!=="cancelled");
+  else if(filter==="today") list=list.filter(a=>a.date===today);
+  else if(filter==="tomorrow") list=list.filter(a=>a.date===tomorrow);
+  else if(filter==="risk") list=list.filter(a=>a.noShowRisk==="high"&&a.status!=="cancelled");
+  const container=document.getElementById("bulkList");
+  if(!container)return;
+  if(!list.length){container.innerHTML=`<div style="padding:12px;color:var(--text3);font-size:.82rem;text-align:center">No appointments match this filter.</div>`;updateSelectedCount();return;}
+  container.innerHTML=list.map(a=>`<div class="bulk-item">
+    <input type="checkbox" class="bulk-check" data-id="${a.id}"
+      data-name="${esc(a.clientName)}" data-phone="${esc(a.phone||"")}"
+      data-date="${a.date}" data-time="${a.time}" data-service="${esc(a.service||"")}"
+      onchange="updateSelectedCount()">
+    <div class="bulk-item-info">
+      <div class="bulk-item-name">${esc(a.clientName)}</div>
+      <div class="bulk-item-meta">${a.date} · ${a.time} · ${a.service||"Appointment"} · ${a.phone||"No phone"}</div>
+    </div>
+  </div>`).join("");
+  updateSelectedCount();
+};
+
+window.updateSelectedCount=function(){const c=document.querySelectorAll(".bulk-check:checked").length;const el=document.getElementById("selectedCount");if(el)el.textContent=`(${c} selected)`;};
+window.selectAll=function(){document.querySelectorAll(".bulk-check").forEach(c=>c.checked=true);updateSelectedCount();};
+window.deselectAll=function(){document.querySelectorAll(".bulk-check").forEach(c=>c.checked=false);updateSelectedCount();};
+
+// ── AI bulk message ───────────────────────────────────────────
+window.aiGenerateBulkMsg=async function(){
+  const btn=event.target;btn.textContent="…";
+  try{const msg=await callAI([{role:"system",content:"Write a WhatsApp appointment reminder template. Use {name},{date},{time},{service}. Under 100 words. Warm Ghanaian tone."},{role:"user",content:"Write a professional appointment reminder template."}]);document.getElementById("bulkMessage").value=msg;}
+  catch(e){document.getElementById("bulkMessage").value="Hello {name}! 👋
+
+Reminder for your {service} on {date} at {time}.
+
+Please confirm or call to reschedule. Thank you! 🙏";}
+  btn.textContent="🤖 AI Write";
+};
+
+// ── Send bulk WhatsApp ────────────────────────────────────────
+window.sendBulkWhatsApp=function(){
+  const checked=[...document.querySelectorAll(".bulk-check:checked")];
+  const template=document.getElementById("bulkMessage").value.trim();
+  if(!checked.length){alert("Select at least one recipient.");return;}
+  if(!template){alert("Write a message first.");return;}
+  const withPhone=checked.filter(c=>c.dataset.phone);
+  if(!withPhone.length){alert("None selected have phone numbers.");return;}
+  if(!confirm(`Open WhatsApp for ${withPhone.length} recipients?`))return;
+  withPhone.forEach((c,i)=>{
+    setTimeout(()=>{
+      const msg=template.replace(/{name}/g,c.dataset.name).replace(/{date}/g,c.dataset.date).replace(/{time}/g,c.dataset.time).replace(/{service}/g,c.dataset.service||"appointment");
+      const phone=c.dataset.phone.replace(/\D/g,"");
+      const ghPhone=phone.startsWith("0")?"233"+phone.slice(1):phone;
+      window.open("https://wa.me/"+ghPhone+"?text="+encodeURIComponent(msg),"_blank");
+      logMessage(c.dataset.name,c.dataset.phone,msg,"Bulk WhatsApp");
+    },i*1200);
+  });
+  const count=parseInt(localStorage.getItem("zyvora_msg_count")||"0")+withPhone.length;
+  localStorage.setItem("zyvora_msg_count",String(count));
+  updateStats();
+};
+
+window.copyBulkMessages=function(){
+  const checked=[...document.querySelectorAll(".bulk-check:checked")];
+  const template=document.getElementById("bulkMessage").value.trim();
+  if(!checked.length||!template){alert("Select recipients and write a message first.");return;}
+  const all=checked.map(c=>{
+    const msg=template.replace(/{name}/g,c.dataset.name).replace(/{date}/g,c.dataset.date).replace(/{time}/g,c.dataset.time).replace(/{service}/g,c.dataset.service||"appointment");
+    return `— ${c.dataset.name} (${c.dataset.phone||"no phone"}):
+${msg}`;
+  }).join("
+
+");
+  navigator.clipboard.writeText(all).then(()=>alert("✅ All messages copied!")).catch(()=>{});
+};
+
+// ── AI Composer ───────────────────────────────────────────────
+let composerType="reminder";
+window.setComposerType=function(el){document.querySelectorAll(".composer-type-btn").forEach(b=>b.classList.remove("active"));el.classList.add("active");composerType=el.dataset.type;};
+
+const COMPOSER_PROMPTS={
+  reminder:"Write a friendly WhatsApp appointment reminder. Warm Ghanaian tone. Under 100 words.",
+  confirmation:"Write a professional appointment confirmation message. Warm Ghanaian tone. Under 100 words.",
+  followup:"Write a friendly follow-up message after an appointment, asking for feedback. Under 100 words.",
+  noshow:"Write a warm message to a client who missed their appointment, offering to reschedule. Under 100 words.",
+  promo:"Write a promotional WhatsApp message with a special offer. Exciting tone. Under 100 words.",
+  reschedule:"Write a polite message asking a client to reschedule. Apologetic but professional. Under 100 words."
+};
+
+window.composeMessage=async function(){
+  const name=document.getElementById("composerName").value.trim()||"Customer";
+  const service=document.getElementById("composerService").value.trim()||"appointment";
+  const dateTime=document.getElementById("composerDateTime").value.trim()||"your scheduled time";
+  const business=document.getElementById("composerBusiness").value.trim()||"our business";
+  const notes=document.getElementById("composerNotes").value.trim();
+  const result=document.getElementById("composerResult");
+  const actions=document.getElementById("composerActions");
+  result.className="composer-result show";result.textContent="🤖 Writing…";actions.style.display="none";
+  try{
+    const msg=await callAI([
+      {role:"system",content:"You write professional WhatsApp messages for Ghanaian service businesses. Plain text only."},
+      {role:"user",content:`${COMPOSER_PROMPTS[composerType]}
+Client=${name}, Service=${service}, DateTime=${dateTime}, Business=${business}${notes?", Notes="+notes:""}`}
+    ],250);
+    result.textContent=msg;window._lastComposedMsg=msg;window._lastComposedPhone=document.getElementById("composerPhone").value.trim();actions.style.display="flex";
+    logMessage(name,window._lastComposedPhone,msg,composerType);
+  }catch(e){result.textContent="❌ "+e.message;}
+};
+
+window.copyComposed=function(){if(window._lastComposedMsg)navigator.clipboard.writeText(window._lastComposedMsg).then(()=>alert("✅ Copied!")).catch(()=>{});};
+window.openWhatsApp=function(){const phone=(window._lastComposedPhone||"").replace(/\D/g,"");if(!phone){alert("Enter a phone number.");return;}const ghPhone=phone.startsWith("0")?"233"+phone.slice(1):phone;window.open("https://wa.me/"+ghPhone+"?text="+encodeURIComponent(window._lastComposedMsg||""),"_blank");};
+window.saveToTemplates=function(){if(!window._lastComposedMsg)return;const templates=JSON.parse(localStorage.getItem("zyvora_custom_templates")||"[]");const name=prompt("Template name:",composerType+" Template");if(!name)return;templates.push({name,type:composerType,body:window._lastComposedMsg,saved:new Date().toISOString()});localStorage.setItem("zyvora_custom_templates",JSON.stringify(templates));alert("✅ Saved!");};
+
+// ── Templates ─────────────────────────────────────────────────
+const DEFAULT_TEMPLATES=[
+  {name:"Appointment Reminder",type:"reminder",icon:"⏰",color:"rgba(108,99,255,.15)",textColor:"var(--accent)",body:"Hello {name}! 👋 Reminder for your {service} on {date} at {time}. Please confirm or call to reschedule. Thank you! 🙏"},
+  {name:"Booking Confirmation",type:"confirmation",icon:"✅",color:"rgba(0,212,170,.15)",textColor:"var(--success)",body:"Hi {name}! Your {service} appointment is confirmed for {date} at {time}. We look forward to seeing you! 😊"},
+  {name:"Follow-Up",type:"followup",icon:"💌",color:"rgba(255,179,71,.15)",textColor:"var(--warning)",body:"Hi {name}! Hope you enjoyed your {service}! We'd love your feedback. Book again for a 10% loyalty discount. ⭐"},
+  {name:"No-Show Follow-Up",type:"noshow",icon:"⚠️",color:"rgba(255,107,107,.15)",textColor:"var(--danger)",body:"Hi {name}, we missed you today for your {service} at {time}. Please reach out to reschedule. 🙏"},
+  {name:"Special Offer",type:"promo",icon:"🎉",color:"rgba(108,99,255,.15)",textColor:"var(--accent)",body:"Hello {name}! 🎉 Special offer — book your {service} this week and get 15% off! Reply to book now. 🔥"},
+  {name:"Reschedule",type:"reschedule",icon:"🔄",color:"rgba(0,212,170,.15)",textColor:"var(--success)",body:"Hi {name}, we need to reschedule your {service} on {date}. We apologise — please reply with your preferred time. 🙏"}
+];
+
+window.loadTemplates=function(){
+  const custom=JSON.parse(localStorage.getItem("zyvora_custom_templates")||"[]");
+  const aiTemplates=JSON.parse(localStorage.getItem("zyvora_ai_templates")||"[]");
+  const all=[...DEFAULT_TEMPLATES,...custom.map(t=>({...t,icon:"💾",color:"rgba(255,179,71,.15)",textColor:"var(--warning)"})),...aiTemplates.map(t=>({...t,icon:"🤖",color:"rgba(108,99,255,.15)",textColor:"var(--accent)"}))];
+  renderTemplates(all);
+};
+
+window.generateTemplates=async function(){
+  const btn=event.target;btn.textContent="Generating…";btn.disabled=true;
+  try{
+    const msg=await callAI([
+      {role:"system",content:"Generate 3 WhatsApp message templates for a Ghanaian service business. Return JSON array with keys: name, type (reminder/confirmation/followup/promo), body. Use {name},{service},{date},{time} as placeholders. Return ONLY valid JSON, no markdown."},
+      {role:"user",content:"Generate 3 professional WhatsApp templates."}
+    ],600);
+    let parsed;
+    try{parsed=JSON.parse(msg.replace(/```json|```/g,"").trim());}catch(e){throw new Error("AI returned invalid format");}
+    localStorage.setItem("zyvora_ai_templates",JSON.stringify(parsed));
+    loadTemplates();
+  }catch(e){alert("Could not generate: "+e.message);}
+  btn.textContent="🤖 Refresh AI Templates";btn.disabled=false;
+};
+
+function renderTemplates(list){
+  window._currentTemplates=list;
+  const grid=document.getElementById("templatesGrid");
+  if(!grid)return;
+  grid.innerHTML=list.map((t,i)=>`<div class="template-card">
+    <div class="template-type"><div class="template-icon" style="background:${t.color};color:${t.textColor}">${t.icon}</div><div class="template-name">${esc(t.name)}</div></div>
+    <div class="template-body">${esc(t.body)}</div>
+    <div class="template-actions"><button class="reminder-btn" onclick="copyTemplate(${i})">📋 Copy</button><button class="reminder-btn" onclick="useTemplate(${i})">✏️ Use</button></div>
+  </div>`).join("");
+}
+window.copyTemplate=function(i){const t=window._currentTemplates?.[i];if(t)navigator.clipboard.writeText(t.body).then(()=>alert("✅ Copied!")).catch(()=>{});};
+window.useTemplate=function(i){const t=window._currentTemplates?.[i];if(!t)return;document.querySelector("[data-view='bulk']")?.click();const el=document.getElementById("bulkMessage");if(el)el.value=t.body;};
+
+// ── History ───────────────────────────────────────────────────
+function logMessage(name,phone,msg,type){
+  const history=JSON.parse(localStorage.getItem("zyvora_msg_history")||"[]");
+  history.unshift({name,phone,msg,type,time:new Date().toLocaleString()});
+  localStorage.setItem("zyvora_msg_history",JSON.stringify(history.slice(0,50)));
+}
+window.renderHistory=function(){
+  const history=JSON.parse(localStorage.getItem("zyvora_msg_history")||"[]");
+  const container=document.getElementById("historyList");
+  if(!container)return;
+  if(!history.length){container.innerHTML=`<div class="empty-state"><span class="empty-icon">🕐</span><p>No messages sent yet.</p></div>`;return;}
+  container.innerHTML=history.map(h=>`<div class="history-item"><div class="history-icon">📱</div>
+    <div><div class="history-text"><strong>${esc(h.name)}</strong> · ${h.phone||"no phone"} · <span style="color:var(--accent);font-size:.72rem">${h.type}</span></div>
+    <div class="history-time">${h.time}</div><div class="history-msg">${esc(h.msg)}</div></div></div>`).join("");
+};
+window.clearHistory=function(){
+  if(!confirm("Clear all message history?"))return;
+  localStorage.removeItem("zyvora_msg_history");
+  localStorage.removeItem("zyvora_sent_ids");
+  localStorage.removeItem("zyvora_msg_count");
+  updateStats();renderQueue();renderHistory();
+};
+
+// Init
+loadTemplates();
+
+</script>
+<script src="sidebar.js"></script>
+</body>
+</html>
